@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniGIS - 地理信息系统</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="src/styles.css">
+    <link rel="stylesheet" href="src/ribbon.css">
+</head>
+<body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden">
+        <defs>
+            <linearGradient id="grad-blue" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#60b4ff" />
+                <stop offset="100%" stop-color="#0b3ed9" />
+            </linearGradient>
+            <linearGradient id="grad-indigo" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#9fb0ff" />
+                <stop offset="100%" stop-color="#3245e8" />
+            </linearGradient>
+            <linearGradient id="grad-purple" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ccb7ff" />
+                <stop offset="100%" stop-color="#6f3ef5" />
+            </linearGradient>
+            <linearGradient id="grad-teal" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#67f0df" />
+                <stop offset="100%" stop-color="#0aa8a6" />
+            </linearGradient>
+            <linearGradient id="grad-green" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#7af7ab" />
+                <stop offset="100%" stop-color="#1fa06a" />
+            </linearGradient>
+            <linearGradient id="grad-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#6fe9ff" />
+                <stop offset="100%" stop-color="#0a86d4" />
+            </linearGradient>
+            <linearGradient id="grad-lime" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#c8ff7a" />
+                <stop offset="100%" stop-color="#6bbb16" />
+            </linearGradient>
+            <linearGradient id="grad-amber" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ffe38d" />
+                <stop offset="100%" stop-color="#f4a021" />
+            </linearGradient>
+            <linearGradient id="grad-orange" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ffbb88" />
+                <stop offset="100%" stop-color="#e86a2f" />
+            </linearGradient>
+            <linearGradient id="grad-red" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ff8a9a" />
+                <stop offset="100%" stop-color="#d5294a" />
+            </linearGradient>
+            <linearGradient id="grad-magenta" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ffa4ff" />
+                <stop offset="100%" stop-color="#bb3add" />
+            </linearGradient>
+            <linearGradient id="grad-slate" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#b3c7de" />
+                <stop offset="100%" stop-color="#475a7a" />
+            </linearGradient>
+        </defs>
+
+        <symbol id="icon-new-project" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-blue)" />
+            <path d="M11 8h8.3l4.7 4.7v11c0 1.6-1.3 2.9-2.9 2.9H11c-1.6 0-2.9-1.3-2.9-2.9V10.9C8.1 9.3 9.4 8 11 8z" fill="#ffffff" fill-opacity="0.95" />
+            <path d="M19.3 8v4.3H24" fill="none" stroke="#0b3ed9" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="16" cy="18.5" r="4.6" fill="#0b3ed9" fill-opacity="0.12" stroke="#0b3ed9" stroke-width="1.4" />
+            <path d="M16 15.8v5.4M13.3 18.5h5.4" stroke="#0b3ed9" stroke-width="1.4" stroke-linecap="round" />
+            <path d="M11.4 12.5h6.5" stroke="#84c6ff" stroke-width="1.2" stroke-linecap="round" />
+            <path d="M11.4 15.1h4.4" stroke="#d7ebff" stroke-width="1" stroke-linecap="round" />
+        </symbol>
+
+        <symbol id="icon-open-project" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-indigo)" />
+            <path d="M6.6 11.4h5.4l2.1 2.3h10.8a2 2 0 012 2v8.3c0 1.6-1.3 2.9-2.9 2.9H8.9a2.9 2.9 0 01-2.9-2.9V12.9c0-.8.6-1.5 1.3-1.5z" fill="#ffffff" fill-opacity="0.96" />
+            <path d="M6.4 15.1h19.2" stroke="#6f87ff" stroke-width="1.3" stroke-linecap="round" />
+            <path d="M15.4 16.8l4.5 4.5-4.5 4.5" fill="none" stroke="#2b3fdc" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M19.9 21.3H12.7" stroke="#2b3fdc" stroke-width="1.6" stroke-linecap="round" />
+            <path d="M11.2 10.2h6.9" stroke="#e2e7ff" stroke-width="1.1" stroke-linecap="round" />
+        </symbol>
+
+        <symbol id="icon-save-project" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-purple)" />
+            <path d="M9.6 8.6h12l3.8 3.8v11.6a2.3 2.3 0 01-2.3 2.3H9.6a2.3 2.3 0 01-2.3-2.3V10.9A2.3 2.3 0 019.6 8.6z" fill="#ffffff" fill-opacity="0.94" />
+            <path d="M12.1 9.5h8.3v6H12.1z" fill="#6f3ef5" fill-opacity="0.14" stroke="#6f3ef5" stroke-width="1.2" />
+            <path d="M12.1 21.2h8.3" stroke="#6f3ef5" stroke-width="1.5" stroke-linecap="round" />
+            <path d="M12.1 23.9h8.3" stroke="#b09bff" stroke-width="1.2" stroke-linecap="round" />
+            <path d="M14.9 18l2.6 2.6 4.7-4.7" fill="none" stroke="#39d29f" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+        </symbol>
+
+        <symbol id="icon-add-shapefile" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-teal)" />
+            <path d="M9 10.2l7-3.5 7 3.5v9.4l-7 3.5-7-3.5z" fill="#ffffff" fill-opacity="0.92" />
+            <path d="M9 13.7l7 3.5 7-3.5" fill="none" stroke="#0aa8a6" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M16 17.2v5.6" stroke="#0aa8a6" stroke-width="1.6" stroke-linecap="round" />
+            <path d="M13.2 20h5.6" stroke="#0aa8a6" stroke-width="1.6" stroke-linecap="round" />
+            <circle cx="16" cy="20" r="4.8" fill="none" stroke="#0aa8a6" stroke-width="1.4" />
+        </symbol>
+
+        <symbol id="icon-remove-layer" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-red)" />
+            <path d="M9 11.2l7-3.4 7 3.4-7 3.4z" fill="#ffffff" fill-opacity="0.93" />
+            <path d="M9 16.1l7-3.4 7 3.4-7 3.4z" fill="#ffffff" fill-opacity="0.88" />
+            <path d="M9 21.1l7-3.4 7 3.4" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85" />
+            <rect x="11.4" y="22.4" width="9.2" height="2.2" rx="1.1" fill="#ffffff" />
+        </symbol>
+
+        <symbol id="icon-export-map" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-magenta)" />
+            <path d="M10 10.5h12c1.7 0 3 1.3 3 3v6.6c0 1.7-1.3 3-3 3H10c-1.7 0-3-1.3-3-3V13.5c0-1.7 1.3-3 3-3z" fill="#ffffff" fill-opacity="0.93" />
+            <path d="M9.5 13.8l3.8-1.3 4.4 1.8 4.3-1.5" fill="none" stroke="#bb3add" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M16 15.8v6.8" stroke="#bb3add" stroke-width="1.6" stroke-linecap="round" />
+            <path d="M13.2 19.6l2.8 2.8 2.8-2.8" fill="none" stroke="#39d29f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+        </symbol>
+
+        <symbol id="icon-pan" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-orange)" />
+            <line x1="16" y1="6.2" x2="16" y2="25.8" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" />
+            <line x1="6.2" y1="16" x2="25.8" y2="16" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" />
+            <polyline points="13.2,9.2 16,6.2 18.8,9.2" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            <polyline points="13.2,22.8 16,25.8 18.8,22.8" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            <polyline points="9.2,13.2 6.2,16 9.2,18.8" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            <polyline points="22.8,13.2 25.8,16 22.8,18.8" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </symbol>
+
+        <symbol id="icon-zoom-in" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-green)" />
+            <circle cx="14.6" cy="14.6" r="6.8" fill="#ffffff" fill-opacity="0.9" />
+            <circle cx="14.6" cy="14.6" r="5.2" fill="none" stroke="#1fa06a" stroke-width="1.6" />
+            <path d="M14.6 12v5.2M12 14.6h5.2" stroke="#1fa06a" stroke-width="1.6" stroke-linecap="round" />
+            <path d="M18.9 18.9l5.4 5.4" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" />
+            <path d="M21.8 21.8l2.5 2.5" stroke="#1fa06a" stroke-width="1.6" stroke-linecap="round" />
+        </symbol>
+
+        <symbol id="icon-zoom-out" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-cyan)" />
+            <circle cx="14.6" cy="14.6" r="6.8" fill="#ffffff" fill-opacity="0.9" />
+            <circle cx="14.6" cy="14.6" r="5.2" fill="none" stroke="#0a86d4" stroke-width="1.6" />
+            <path d="M12.2 14.6h4.8" stroke="#0a86d4" stroke-width="1.6" stroke-linecap="round" />
+            <path d="M18.9 18.9l5.4 5.4" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" />
+            <path d="M21.8 21.8l2.5 2.5" stroke="#0a86d4" stroke-width="1.6" stroke-linecap="round" />
+        </symbol>
+
+        <symbol id="icon-zoom-extent" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-slate)" />
+            <rect x="8.4" y="8.4" width="15.2" height="15.2" rx="2.2" fill="#ffffff" fill-opacity="0.9" />
+            <rect x="10.6" y="10.6" width="10.8" height="10.8" rx="1.6" fill="none" stroke="#475a7a" stroke-width="1.6" />
+            <polyline points="16,6.4 18.8,9.2 16,12" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            <polyline points="16,25.6 13.2,22.8 16,20" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            <polyline points="6.4,16 9.2,13.2 12,16" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            <polyline points="25.6,16 22.8,18.8 20,16" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </symbol>
+
+        <symbol id="icon-select" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-lime)" />
+            <rect x="9.2" y="9.2" width="13.6" height="13.6" rx="2.6" fill="#ffffff" fill-opacity="0.9" />
+            <path d="M11.4 11.4h9.2v9.2h-9.2z" fill="none" stroke="#6bbb16" stroke-dasharray="2.4 2.4" stroke-width="1.4" />
+            <path d="M18.6 18.6l4.6 7" fill="none" stroke="#6bbb16" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M19.8 22.8l4.2 1.2-1.2-4.2" fill="#6bbb16" />
+        </symbol>
+
+        <symbol id="icon-clear-selection" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-amber)" />
+            <rect x="9.2" y="9.2" width="13.6" height="13.6" rx="2.6" fill="#ffffff" fill-opacity="0.9" />
+            <path d="M11.4 11.4h9.2v9.2h-9.2z" fill="none" stroke="#f4a021" stroke-dasharray="2.4 2.4" stroke-width="1.4" />
+            <path d="M12.6 12.6l7.8 7.8" stroke="#d5294a" stroke-width="1.8" stroke-linecap="round" />
+            <path d="M20.4 12.6l-7.8 7.8" stroke="#d5294a" stroke-width="1.8" stroke-linecap="round" />
+        </symbol>
+
+        <symbol id="icon-measure-distance" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-indigo)" />
+            <rect x="7.8" y="13.4" width="16.4" height="5.2" rx="2.2" fill="#ffffff" fill-opacity="0.93" />
+            <path d="M9.4 14.6v2.8M12.4 14.6v2.8M15.4 14.6v2.8M18.4 14.6v2.8M21.4 14.6v2.8" stroke="#3245e8" stroke-width="1.4" stroke-linecap="round" />
+            <circle cx="8.8" cy="16" r="4" fill="none" stroke="#9fb0ff" stroke-width="1.4" stroke-dasharray="2.8 2" />
+            <circle cx="23.2" cy="16" r="4" fill="none" stroke="#9fb0ff" stroke-width="1.4" stroke-dasharray="2.8 2" />
+        </symbol>
+
+        <symbol id="icon-measure-area" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-purple)" />
+            <polygon points="10.2,11.2 21.4,9.8 24.8,18.6 15.8,23.2 7.6,17.8" fill="#ffffff" fill-opacity="0.93" />
+            <polygon points="11.2,12.1 20.5,10.9 23.2,17.8 15.8,21.6 9.1,17.2" fill="none" stroke="#6f3ef5" stroke-width="1.4" stroke-linejoin="round" />
+            <circle cx="11.2" cy="12.1" r="1.1" fill="#6f3ef5" />
+            <circle cx="20.5" cy="10.9" r="1.1" fill="#6f3ef5" />
+            <circle cx="23.2" cy="17.8" r="1.1" fill="#6f3ef5" />
+            <circle cx="15.8" cy="21.6" r="1.1" fill="#6f3ef5" />
+            <circle cx="9.1" cy="17.2" r="1.1" fill="#6f3ef5" />
+        </symbol>
+
+        <symbol id="icon-add-marker" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-magenta)" />
+            <path d="M16 8.5a6.5 6.5 0 016.5 6.5c0 4.4-3.5 9.9-6.5 12.5-3-2.6-6.5-8.1-6.5-12.5A6.5 6.5 0 0116 8.5z" fill="#ffffff" fill-opacity="0.93" />
+            <circle cx="16" cy="15" r="2.4" fill="#bb3add" />
+            <path d="M11 23.6l5 2.7 5-2.7" fill="none" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+        </symbol>
+
+        <symbol id="icon-add-text" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-orange)" />
+            <path d="M11 11V9.8c0-1 .8-1.8 1.8-1.8h6.4c1 0 1.8.8 1.8 1.8V11" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M11 11h10" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" />
+            <path d="M16 11v11" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" />
+            <path d="M13.2 22h5.6" stroke="#ffd1b0" stroke-width="1.4" stroke-linecap="round" />
+        </symbol>
+
+        <symbol id="icon-draw-point" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-green)" />
+            <circle cx="16" cy="16" r="4.6" fill="#ffffff" fill-opacity="0.92" />
+            <circle cx="16" cy="16" r="2.6" fill="#1fa06a" />
+            <path d="M16 7.2v4" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" />
+            <path d="M16 24.8v-4" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" />
+            <path d="M7.2 16h4" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" />
+            <path d="M24.8 16h-4" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" />
+        </symbol>
+
+        <symbol id="icon-draw-line" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-cyan)" />
+            <path d="M10 21.8l12-11.6" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="10" cy="21.8" r="3.2" fill="#0a86d4" stroke="#ffffff" stroke-width="1.4" />
+            <circle cx="22" cy="10.2" r="3.2" fill="#0a86d4" stroke="#ffffff" stroke-width="1.4" />
+        </symbol>
+
+        <symbol id="icon-draw-polygon" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-purple)" />
+            <polygon points="9.6,12.4 20.8,8.8 24.6,16.8 18.2,23.6 9.4,21.2" fill="#ffffff" fill-opacity="0.92" />
+            <polygon points="10.8,12.9 20.1,9.9 23.2,16.9 17.8,22.4 10.4,20.4" fill="none" stroke="#6f3ef5" stroke-width="1.4" stroke-linejoin="round" />
+            <circle cx="10.8" cy="12.9" r="1" fill="#6f3ef5" />
+            <circle cx="20.1" cy="9.9" r="1" fill="#6f3ef5" />
+            <circle cx="23.2" cy="16.9" r="1" fill="#6f3ef5" />
+            <circle cx="17.8" cy="22.4" r="1" fill="#6f3ef5" />
+            <circle cx="10.4" cy="20.4" r="1" fill="#6f3ef5" />
+        </symbol>
+
+        <symbol id="icon-buffer" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-teal)" />
+            <circle cx="16" cy="16" r="8.6" fill="#ffffff" fill-opacity="0.9" />
+            <circle cx="16" cy="16" r="6.2" fill="none" stroke="#0aa8a6" stroke-width="1.6" />
+            <circle cx="16" cy="16" r="3.6" fill="#0aa8a6" fill-opacity="0.18" stroke="#0aa8a6" stroke-width="1.6" />
+            <circle cx="16" cy="16" r="1.6" fill="#0aa8a6" />
+        </symbol>
+
+        <symbol id="icon-intersect" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-magenta)" />
+            <circle cx="13" cy="16" r="6" fill="#ffffff" fill-opacity="0.9" />
+            <circle cx="19" cy="16" r="6" fill="#bb3add" fill-opacity="0.28" stroke="#bb3add" stroke-width="1.4" />
+            <path d="M13 10a6 6 0 016 6 6 6 0 01-6 6 6 6 0 010-12z" fill="#ffffff" fill-opacity="0.6" stroke="#bb3add" stroke-width="1.4" />
+        </symbol>
+
+        <symbol id="icon-union" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-green)" />
+            <circle cx="12.6" cy="16.4" r="5.8" fill="#ffffff" fill-opacity="0.9" stroke="#1fa06a" stroke-width="1.2" />
+            <circle cx="19.4" cy="16.4" r="5.8" fill="#1fa06a" fill-opacity="0.32" stroke="#1fa06a" stroke-width="1.2" />
+            <path d="M12.6 10.6h6.8v11.6h-6.8z" fill="#1fa06a" fill-opacity="0.22" />
+        </symbol>
+
+        <symbol id="icon-statistics" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-lime)" />
+            <rect x="8.6" y="17" width="3.4" height="7" rx="1.4" fill="#ffffff" fill-opacity="0.93" />
+            <rect x="14.3" y="13" width="3.4" height="11" rx="1.4" fill="#ffffff" fill-opacity="0.93" />
+            <rect x="20" y="9.4" width="3.4" height="14.6" rx="1.4" fill="#ffffff" fill-opacity="0.93" />
+            <path d="M8.6 24.4h14.8" stroke="#6bbb16" stroke-width="1.6" stroke-linecap="round" />
+        </symbol>
+
+        <symbol id="icon-toggle-layers" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-slate)" />
+            <path d="M9.2 12.2l6.8-3.4 6.8 3.4-6.8 3.4z" fill="#ffffff" fill-opacity="0.92" />
+            <path d="M9.2 17l6.8-3.4 6.8 3.4-6.8 3.4z" fill="#ffffff" fill-opacity="0.84" />
+            <path d="M9.2 21.8l6.8-3.4 6.8 3.4" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85" />
+            <circle cx="16" cy="24.4" r="1.6" fill="#475a7a" />
+        </symbol>
+
+        <symbol id="icon-toggle-properties" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-blue)" />
+            <rect x="8.8" y="8.8" width="14.4" height="14.4" rx="2.2" fill="#ffffff" fill-opacity="0.94" />
+            <path d="M12 11.8h8.4" stroke="#0b3ed9" stroke-width="1.4" stroke-linecap="round" />
+            <path d="M12 15.6h8.4" stroke="#60b4ff" stroke-width="1.2" stroke-linecap="round" />
+            <path d="M12 19.4h4.2" stroke="#0b3ed9" stroke-width="1.4" stroke-linecap="round" />
+            <rect x="17.4" y="18.3" width="3.4" height="3.4" rx="0.8" fill="#0b3ed9" fill-opacity="0.2" stroke="#0b3ed9" stroke-width="1.1" />
+        </symbol>
+
+        <symbol id="icon-toggle-console" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-slate)" />
+            <rect x="7.6" y="9.4" width="16.8" height="13.2" rx="2" fill="#ffffff" fill-opacity="0.94" />
+            <path d="M9.8 11.6l5.2 4.4-5.2 4.4" fill="none" stroke="#475a7a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M17.4 19.4h4.8" stroke="#475a7a" stroke-width="1.6" stroke-linecap="round" />
+            <rect x="7.6" y="21.6" width="16.8" height="1.8" rx="0.9" fill="#dbe4f0" />
+        </symbol>
+
+        <symbol id="icon-basemap-satellite" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-magenta)" />
+            <circle cx="16" cy="16" r="8.4" fill="#ffffff" fill-opacity="0.95" />
+            <path d="M8.4 16h15.2" stroke="#bb3add" stroke-width="1.5" stroke-linecap="round" />
+            <path d="M16 8.4c3.2 0 5.8 3.4 5.8 7.6s-2.6 7.6-5.8 7.6-5.8-3.4-5.8-7.6 2.6-7.6 5.8-7.6z" fill="none" stroke="#bb3add" stroke-width="1.5" />
+            <path d="M10 12.2c1.8 1 3.8 1.6 6 1.6s4.2-.6 6-1.6" fill="none" stroke="#bb3add" stroke-width="1.2" stroke-linecap="round" />
+            <path d="M10 19.8c1.8-1 3.8-1.6 6-1.6s4.2.6 6 1.6" fill="none" stroke="#bb3add" stroke-width="1.2" stroke-linecap="round" />
+        </symbol>
+
+        <symbol id="icon-basemap-street" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-blue)" />
+            <rect x="8.6" y="8.6" width="14.8" height="14.8" rx="2.4" fill="#ffffff" fill-opacity="0.95" />
+            <path d="M8.6 13.2h14.8" stroke="#0b3ed9" stroke-width="1.4" stroke-linecap="round" />
+            <path d="M8.6 18.8h14.8" stroke="#60b4ff" stroke-width="1.4" stroke-linecap="round" />
+            <path d="M13.2 8.6v14.8" stroke="#0b3ed9" stroke-width="1.4" stroke-linecap="round" />
+            <path d="M18.8 8.6v14.8" stroke="#60b4ff" stroke-width="1.4" stroke-linecap="round" />
+        </symbol>
+
+        <symbol id="icon-basemap-terrain" viewBox="0 0 32 32">
+            <rect x="2.4" y="2.4" width="27.2" height="27.2" rx="6.2" fill="url(#grad-green)" />
+            <path d="M7.8 21.8l5.4-7.2 3.6 4.6 3.4-4.2 4.6 6.8" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M7.8 21.8h16.4" stroke="#1fa06a" stroke-width="1.4" stroke-linecap="round" />
+            <path d="M12.4 14.6l3.4-4.6 3.6 4.8" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="19.4" cy="10" r="1.4" fill="#ffffff" fill-opacity="0.85" />
+        </symbol>
+    </svg>
+
+    <!-- Ribbon Menu -->
+    <div class="ribbon">
+        <div class="ribbon-header">
+            <div class="app-title">
+                <img src="src/assets/logo.svg" alt="logo" class="app-logo">
+                <span>MiniGIS</span>
+            </div>
+            <div class="ribbon-tabs">
+                <div class="ribbon-tab active" data-tab="project">项目</div>
+                <div class="ribbon-tab" data-tab="map">地图</div>
+                <div class="ribbon-tab" data-tab="analysis">分析</div>
+                <div class="ribbon-tab" data-tab="view">视图</div>
+            </div>
+        </div>
+        
+        <!-- Ribbon Content -->
+        <div class="ribbon-content">
+            <!-- Project Tab -->
+            <div class="ribbon-panel active" data-panel="project">
+                
+                <div class="ribbon-section">
+                    <div class="ribbon-section-title">数据</div>
+                    <div class="ribbon-section-content">
+                        <button class="ribbon-button" id="btn-add-shapefile">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-add-shapefile"></use>
+                            </svg>
+                            <span>添加Shapefile</span>
+                        </button>
+                        <button class="ribbon-button" id="btn-remove-layer">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-remove-layer"></use>
+                            </svg>
+                            <span>移除图层</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="ribbon-section">
+                    <div class="ribbon-section-title">导出</div>
+                    <div class="ribbon-section-content">
+                        <button class="ribbon-button" id="btn-export-map">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-export-map"></use>
+                            </svg>
+                            <span>导出地图</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Map Tab -->
+            <div class="ribbon-panel" data-panel="map">
+                <div class="ribbon-section">
+                    <div class="ribbon-section-title">导航</div>
+                    <div class="ribbon-section-content">
+                        <button class="ribbon-button" id="btn-pan">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-pan"></use>
+                            </svg>
+                            <span>平移</span>
+                        </button>
+                        <button class="ribbon-button" id="btn-zoom-in">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-zoom-in"></use>
+                            </svg>
+                            <span>放大</span>
+                        </button>
+                        <button class="ribbon-button" id="btn-zoom-out">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-zoom-out"></use>
+                            </svg>
+                            <span>缩小</span>
+                        </button>
+                        <button class="ribbon-button" id="btn-zoom-extent">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-zoom-extent"></use>
+                            </svg>
+                            <span>全图</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="ribbon-section">
+                    <div class="ribbon-section-title">选择</div>
+                    <div class="ribbon-section-content">
+                        <button class="ribbon-button" id="btn-select">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-select"></use>
+                            </svg>
+                            <span>选择要素</span>
+                        </button>
+                        <button class="ribbon-button" id="btn-clear-selection">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-clear-selection"></use>
+                            </svg>
+                            <span>清除选择</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="ribbon-section">
+                    <div class="ribbon-section-title">测量</div>
+                    <div class="ribbon-section-content">
+                        <button class="ribbon-button" id="btn-measure-distance">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-measure-distance"></use>
+                            </svg>
+                            <span>测量工具</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="ribbon-section">
+                    <div class="ribbon-section-title">绘制</div>
+                    <div class="ribbon-section-content">
+                        <button class="ribbon-button" id="btn-draw-tools">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-draw-polygon"></use>
+                            </svg>
+                            <span>绘制工具</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Analysis Tab -->
+            <div class="ribbon-panel" data-panel="analysis">
+                <div class="ribbon-section">
+                    <div class="ribbon-section-title">空间分析</div>
+                    <div class="ribbon-section-content">
+                        <button class="ribbon-button" id="btn-buffer">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-buffer"></use>
+                            </svg>
+                            <span>缓冲区</span>
+                        </button>
+                        <button class="ribbon-button" id="btn-intersect">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-intersect"></use>
+                            </svg>
+                            <span>相交</span>
+                        </button>
+                        <button class="ribbon-button" id="btn-union">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-union"></use>
+                            </svg>
+                            <span>合并</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="ribbon-section">
+                    <div class="ribbon-section-title">统计</div>
+                    <div class="ribbon-section-content">
+                        <button class="ribbon-button" id="btn-statistics">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-statistics"></use>
+                            </svg>
+                            <span>统计分析</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- View Tab -->
+            <div class="ribbon-panel" data-panel="view">
+                <div class="ribbon-section">
+                    <div class="ribbon-section-title">窗口</div>
+                    <div class="ribbon-section-content">
+                        <button class="ribbon-button" id="btn-toggle-layers">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-toggle-layers"></use>
+                            </svg>
+                            <span>图层面板</span>
+                        </button>
+                        <button class="ribbon-button" id="btn-toggle-properties">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-toggle-properties"></use>
+                            </svg>
+                            <span>属性面板</span>
+                        </button>
+                        <button class="ribbon-button" id="btn-toggle-console">
+                            <svg class="ribbon-icon" aria-hidden="true">
+                                <use href="#icon-toggle-console"></use>
+                            </svg>
+                            <span>控制台</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="ribbon-section">
+                    <div class="ribbon-section-title">底图</div>
+                    <div class="ribbon-section-content">
+                        <div class="basemap-selector">
+                            <button class="ribbon-button" id="btn-basemap-gallery">
+                                <svg class="ribbon-icon" aria-hidden="true">
+                                    <use href="#icon-basemap-satellite"></use>
+                                </svg>
+                                <span id="basemap-current-name">天地图影像</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="ribbon-section">
+                    <div class="ribbon-section-title">设置</div>
+                    <div class="ribbon-section-content">
+                        <button class="ribbon-button" id="btn-api-settings">
+                            <svg class="ribbon-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M12 1v6m0 6v6m5.2-14.2l-4.2 4.2m0 6l-4.2 4.2M23 12h-6m-6 0H1m14.2 5.2l-4.2-4.2m0-6l-4.2-4.2"></path>
+                            </svg>
+                            <span>API密钥</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="basemap-panel" id="basemap-panel" hidden></div>
+    
+    <!-- API Settings Dialog -->
+    <div class="dialog-overlay" id="api-settings-dialog" style="display: none;">
+        <div class="dialog">
+            <div class="dialog-header">
+                <h3>天地图 API 密钥设置</h3>
+                <button class="dialog-close" id="close-api-settings">×</button>
+            </div>
+            <div class="dialog-content">
+                <div class="form-group">
+                    <label for="tianditu-api-key">API密钥：</label>
+                    <input type="text" id="tianditu-api-key" class="form-input" placeholder="请输入天地图API密钥">
+                    <small class="form-hint">
+                        如需申请天地图API密钥，请访问: 
+                        <a href="https://console.tianditu.gov.cn/" target="_blank">天地图开放平台</a>
+                    </small>
+                </div>
+                <div class="dialog-info">
+                    <p><strong>当前密钥状态：</strong></p>
+                    <p id="current-key-status" style="font-family: monospace; padding: 8px; background: #f5f5f5; border-radius: 4px; word-break: break-all;"></p>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-secondary" id="reset-api-key">恢复默认</button>
+                <button class="btn btn-primary" id="save-api-key">保存</button>
+                <button class="btn btn-secondary" id="cancel-api-settings">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-container">
+        <!-- Left Panel - Layers -->
+        <div class="panel panel-left" id="layers-panel">
+            <div class="panel-header">
+                <h3>图层</h3>
+                <button class="panel-close" onclick="togglePanel('layers-panel')">×</button>
+            </div>
+            <div class="panel-content">
+                <div id="layers-list" class="layers-list">
+                    <!-- Layers will be dynamically added here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Map Container -->
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+        
+        <!-- Right Panel - Properties -->
+        <div class="panel panel-right" id="properties-panel">
+            <div class="panel-header">
+                <h3>属性</h3>
+                <button class="panel-close" onclick="togglePanel('properties-panel')">×</button>
+            </div>
+            <div class="panel-content">
+                <div id="properties-content" class="properties-content">
+                    <p class="empty-message">选择要素以查看属性</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bottom Panel - Attribute Table -->
+    <div class="panel panel-bottom" id="attribute-panel" style="display: none;">
+        <div class="panel-header">
+            <h3>属性表</h3>
+            <button class="panel-close" onclick="togglePanel('attribute-panel')">×</button>
+        </div>
+        <div class="panel-content">
+            <div class="attribute-table-container">
+                <table id="attribute-table">
+                    <thead id="attribute-table-head"></thead>
+                    <tbody id="attribute-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Console Panel -->
+    <div class="panel panel-bottom" id="console-panel" style="display: none;">
+        <div class="panel-header">
+            <h3>控制台</h3>
+            <button class="panel-close" onclick="togglePanel('console-panel')">×</button>
+        </div>
+        <div class="panel-content">
+            <div id="console-content" style="font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; padding: 10px; background: #1e1e1e; color: #d4d4d4; height: 100%; overflow-y: auto;">
+                <div style="color: #4ec9b0;">MiniGIS 控制台</div>
+                <div style="color: #858585;">版本: 1.0.0</div>
+                <div style="color: #858585; margin-top: 10px;">提示：所有日志信息将显示在此处</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-message" id="status-message">就绪</div>
+        <div class="status-progress" id="status-progress" style="display: none;">
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
+        <div class="status-info">
+            <span class="coordinate-display" id="coordinate-display">经度: -- | 纬度: --</span>
+            <span class="separator">|</span>
+            <span class="scale-display" id="scale-display">比例尺: 1:--</span>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>

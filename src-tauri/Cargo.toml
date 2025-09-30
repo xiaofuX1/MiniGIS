@@ -1,0 +1,29 @@
+[package]
+name = "minigis"
+version = "0.1.0"
+description = "MiniGIS - A modern GIS application"
+authors = ["xiaofu"]
+edition = "2021"
+
+[lib]
+name = "minigis_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+thiserror = "1.0"
+anyhow = "1.0"
+shapefile = { version = "0.7", features = ["encoding_rs"] }
+geo-types = "0.7"
+geojson = "0.24"
+regex = "1"
+encoding_rs = "0.8"
