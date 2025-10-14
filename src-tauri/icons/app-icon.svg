@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- 背景渐变 - 使用启动页的天蓝色 #0ea5e9 -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#06b6d4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0ea5e9;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- 顶部高光 -->
+    <linearGradient id="topHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.25" />
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0" />
+    </linearGradient>
+    
+    <!-- 图层渐变 -->
+    <linearGradient id="layerFill1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.95" />
+      <stop offset="100%" style="stop-color:#e0f2fe;stop-opacity:0.85" />
+    </linearGradient>
+    <linearGradient id="layerFill2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.85" />
+      <stop offset="100%" style="stop-color:#bae6fd;stop-opacity:0.75" />
+    </linearGradient>
+    <linearGradient id="layerFill3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.75" />
+      <stop offset="100%" style="stop-color:#7dd3fc;stop-opacity:0.65" />
+    </linearGradient>
+    
+    <!-- 阴影滤镜 -->
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+    <filter id="lightShadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+  
+  <!-- 背景 - 圆角矩形 -->
+  <rect width="512" height="512" rx="100" ry="100" fill="url(#bgGradient)"/>
+  
+  <!-- 背景装饰网格 -->
+  <g opacity="0.08" stroke="#ffffff" stroke-width="1.5" fill="none">
+    <circle cx="256" cy="256" r="140"/>
+    <circle cx="256" cy="256" r="180"/>
+    <circle cx="256" cy="256" r="220"/>
+    <line x1="256" y1="36" x2="256" y2="476"/>
+    <line x1="36" y1="256" x2="476" y2="256"/>
+    <line x1="436" y1="76" x2="76" y2="436"/>
+    <line x1="76" y1="76" x2="436" y2="436"/>
+  </g>
+  
+  <!-- 背景光晕 -->
+  <ellipse cx="256" cy="180" rx="200" ry="100" fill="#ffffff" opacity="0.12"/>
+  
+  <!-- 主图标组 -->
+  <g transform="translate(256, 256) scale(11)">
+    <!-- 图层填充 - 增加立体感 -->
+    <g opacity="1" filter="url(#lightShadow)">
+      <!-- 左侧图层区域 -->
+      <path 
+        fill="url(#layerFill1)"
+        d="M3 5.618v10.764c0 .355.239.666.553.765L9 20V7L3.447 4.724A1 1 0 003 5.618z"
+      />
+      <!-- 中间图层区域 -->
+      <path 
+        fill="url(#layerFill2)"
+        d="M9 7v13l6-3V4L9 7z"
+      />
+      <!-- 右侧图层区域 -->
+      <path 
+        fill="url(#layerFill3)"
+        d="M15 4v13l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4z"
+      />
+    </g>
+    
+    <!-- 地图图层图标轮廓 - 与启动页一致 -->
+    <path 
+      fill="none"
+      stroke="#ffffff" 
+      stroke-width="2" 
+      stroke-linecap="round" 
+      stroke-linejoin="round"
+      d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" 
+      filter="url(#shadow)"
+    />
+    
+    <!-- 图层连接点 - 增加细节 -->
+    <g fill="#ffffff" opacity="0.9">
+      <circle cx="9" cy="7" r="0.8"/>
+      <circle cx="9" cy="13.5" r="0.8"/>
+      <circle cx="9" cy="20" r="0.8"/>
+      <circle cx="15" cy="4" r="0.8"/>
+      <circle cx="15" cy="10.5" r="0.8"/>
+      <circle cx="15" cy="17" r="0.8"/>
+    </g>
+    
+    <!-- 图层内部细节线 -->
+    <g stroke="#ffffff" stroke-width="0.5" opacity="0.4" fill="none">
+      <path d="M4 8 L8 10"/>
+      <path d="M4 12 L8 14"/>
+      <path d="M10 9 L14 7"/>
+      <path d="M10 13 L14 11"/>
+      <path d="M16 6 L20 8"/>
+      <path d="M16 10 L20 12"/>
+    </g>
+  </g>
+  
+  <!-- GPS定位标记 - 增强GIS特性 -->
+  <g transform="translate(380, 140)" filter="url(#shadow)">
+    <circle cx="0" cy="0" r="24" fill="#ffffff" opacity="0.9"/>
+    <path d="M0 -16 C-6 -16 -10 -12 -10 -6 C-10 0 0 12 0 12 C0 12 10 0 10 -6 C10 -12 6 -16 0 -16 Z" 
+          fill="#fbbf24" stroke="#ffffff" stroke-width="2"/>
+    <circle cx="0" cy="-6" r="3.5" fill="#ffffff"/>
+  </g>
+  
+  <!-- 坐标网格图标 - 左上角 -->
+  <g transform="translate(130, 140)" opacity="0.85" filter="url(#lightShadow)">
+    <rect x="-20" y="-20" width="40" height="40" rx="6" fill="#ffffff" opacity="0.9"/>
+    <g stroke="#0ea5e9" stroke-width="2" fill="none">
+      <line x1="-12" y1="-12" x2="12" y2="-12"/>
+      <line x1="-12" y1="0" x2="12" y2="0"/>
+      <line x1="-12" y1="12" x2="12" y2="12"/>
+      <line x1="-12" y1="-12" x2="-12" y2="12"/>
+      <line x1="0" y1="-12" x2="0" y2="12"/>
+      <line x1="12" y1="-12" x2="12" y2="12"/>
+    </g>
+  </g>
+  
+  <!-- 数据点标记 -->
+  <g opacity="0.8">
+    <circle cx="140" cy="360" r="8" fill="#ffffff" stroke="#0ea5e9" stroke-width="2"/>
+    <circle cx="180" cy="380" r="8" fill="#ffffff" stroke="#0ea5e9" stroke-width="2"/>
+    <circle cx="340" cy="350" r="8" fill="#ffffff" stroke="#0ea5e9" stroke-width="2"/>
+    <circle cx="370" cy="380" r="8" fill="#ffffff" stroke="#0ea5e9" stroke-width="2"/>
+  </g>
+  
+  <!-- 连接线 - 表示空间关系 -->
+  <g stroke="#ffffff" stroke-width="2" opacity="0.4" fill="none" stroke-dasharray="4,4">
+    <path d="M140 360 L180 380"/>
+    <path d="M180 380 L340 350"/>
+    <path d="M340 350 L370 380"/>
+  </g>
+  
+  <!-- 角落装饰元素 -->
+  <g opacity="0.5" fill="#ffffff">
+    <circle cx="80" cy="80" r="5"/>
+    <circle cx="432" cy="80" r="5"/>
+    <circle cx="80" cy="432" r="5"/>
+    <circle cx="432" cy="432" r="5"/>
+  </g>
+  
+  <!-- 整体顶部高光 -->
+  <rect x="0" y="0" width="512" height="200" rx="100" ry="100" fill="url(#topHighlight)"/>
+</svg>

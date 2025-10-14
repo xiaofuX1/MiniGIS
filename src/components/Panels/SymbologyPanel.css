@@ -1,0 +1,70 @@
+.symbology-panel-content {
+  padding: 12px;
+  height: 100%;
+}
+
+.symbology-layer-info {
+  padding: 8px 10px;
+  background: linear-gradient(90deg, #fff7e6 0%, #fffbf0 100%);
+  border-left: 3px solid #fa8c16;
+  border-radius: 2px;
+  margin-bottom: 12px;
+}
+
+.symbology-layer-info strong {
+  color: #262626;
+  font-size: 13px;
+}
+
+.symbology-layer-info span {
+  color: #595959;
+  font-size: 12px;
+}
+
+.symbolizer-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.symbol-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.symbol-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #595959;
+  margin-bottom: 2px;
+}
+
+.symbol-group .ant-select,
+.symbol-group .ant-input,
+.symbol-group .ant-color-picker-trigger {
+  width: 100%;
+}
+
+.symbol-group .ant-slider {
+  margin: 4px 0 8px 0;
+}
+
+/* 优化分隔线样式 */
+.symbolizer-editor .ant-divider {
+  margin: 8px 0;
+  border-top-color: #e0e0e0;
+}
+
+.symbolizer-editor .ant-divider-inner-text {
+  font-size: 12px;
+  color: #8c8c8c;
+  font-weight: 500;
+}
+
+.text-gray-500 {
+  color: #8c8c8c;
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 12px;
+}

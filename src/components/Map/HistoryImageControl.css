@@ -1,0 +1,59 @@
+.history-image-control {
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  z-index: 1000;
+}
+
+.control-content {
+  width: 120px;
+}
+
+.year-display {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1890ff;
+  margin-bottom: 4px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 极简 Slider 样式 */
+.history-image-control .ant-slider {
+  margin: 4px 0;
+}
+
+.history-image-control .ant-slider-rail {
+  background: rgba(255, 255, 255, 0.3);
+  height: 3px;
+}
+
+.history-image-control .ant-slider-track {
+  background: #1890ff;
+  height: 3px;
+}
+
+.history-image-control .ant-slider-handle {
+  width: 12px;
+  height: 12px;
+  margin-top: -4.5px;
+  background: #1890ff;
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.history-image-control .ant-slider-handle:hover,
+.history-image-control .ant-slider-handle:focus {
+  background: #40a9ff;
+}
+
+.history-image-control .ant-slider-mark-text {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.history-image-control .ant-slider-mark-text-active {
+  color: white;
+  font-weight: 600;
+}

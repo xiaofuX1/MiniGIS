@@ -1,0 +1,9 @@
+[env]
+GDAL_HOME = "C:\\vcpkg\\installed\\x64-windows"
+GDAL_LIB_DIR = "C:\\vcpkg\\installed\\x64-windows\\lib"
+GDAL_INCLUDE_DIR = "C:\\vcpkg\\installed\\x64-windows\\include"
+GDAL_VERSION = "3.8.5"
+GDAL_DATA = "C:\\vcpkg\\installed\\x64-windows\\share\\gdal"
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=/LIBPATH:C:\\vcpkg\\installed\\x64-windows\\lib"]

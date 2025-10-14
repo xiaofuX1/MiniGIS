@@ -1,0 +1,88 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "productName": "MiniGIS",
+  "version": "0.2.0",
+  "identifier": "com.xiaofu.minigis",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:5175",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "splashscreen",
+        "title": "MiniGIS",
+        "url": "splash.html",
+        "width": 400,
+        "height": 280,
+        "center": true,
+        "resizable": false,
+        "decorations": false,
+        "transparent": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": true,
+        "backgroundColor": "#0ea5e9"
+      },
+      {
+        "label": "main",
+        "title": "MiniGIS",
+        "width": 1600,
+        "height": 900,
+        "minWidth": 800,
+        "minHeight": 600,
+        "center": true,
+        "resizable": true,
+        "maximized": false,
+        "decorations": true,
+        "transparent": false,
+        "alwaysOnTop": false,
+        "skipTaskbar": false,
+        "visible": false,
+        "backgroundColor": "#ffffff",
+        "titleBarStyle": "Visible"
+      }
+    ],
+    "security": {
+      "csp": {
+        "default-src": "'self' customprotocol: asset:",
+        "img-src": "'self' asset: http: https: data: blob: 'unsafe-inline'",
+        "style-src": "'self' 'unsafe-inline'",
+        "script-src": "'self' 'unsafe-inline' 'unsafe-eval'",
+        "connect-src": "'self' ipc: http: https: ws: wss: data:",
+        "worker-src": "'self' blob:",
+        "child-src": "'self' blob:"
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "../target/release/gdal-data/*": "./gdal-data/",
+      "../target/release/proj-data/*": "./proj-data/"
+    },
+    "externalBin": [],
+    "windows": {
+      "wix": {
+        "language": "zh-CN"
+      },
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      }
+    }
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    }
+  }
+}
