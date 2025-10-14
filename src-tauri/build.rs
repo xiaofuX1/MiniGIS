@@ -49,38 +49,40 @@ fn main() {
     println!("cargo:rustc-link-search=native={}", gdal_lib_dir);
     println!("cargo:rustc-link-lib=dylib=gdal");
     
-    // 复制GDAL及所有依赖DLL到目标目录（用于打包）
+    // 仅在 release 构建时复制 GDAL 及依赖文件（用于打包）
     if let Ok(profile) = std::env::var("PROFILE") {
-        let target_dir = format!("..\\target\\{}", profile);
-        if Path::new(&target_dir).exists() && Path::new(&gdal_bin_path).exists() {
-            // 复制vcpkg bin目录下的所有DLL
-            if let Ok(entries) = fs::read_dir(&gdal_bin_path) {
-                for entry in entries.flatten() {
-                    if let Ok(file_type) = entry.file_type() {
-                        if file_type.is_file() {
-                            if let Some(file_name) = entry.file_name().to_str() {
-                                if file_name.ends_with(".dll") {
-                                    let src = entry.path();
-                                    let dst = format!("{}\\{}", target_dir, file_name);
-                                    let _ = fs::copy(&src, &dst);
+        if profile == "release" {
+            let target_dir = format!("..\\target\\{}", profile);
+            if Path::new(&target_dir).exists() && Path::new(&gdal_bin_path).exists() {
+                // 复制vcpkg bin目录下的所有DLL
+                if let Ok(entries) = fs::read_dir(&gdal_bin_path) {
+                    for entry in entries.flatten() {
+                        if let Ok(file_type) = entry.file_type() {
+                            if file_type.is_file() {
+                                if let Some(file_name) = entry.file_name().to_str() {
+                                    if file_name.ends_with(".dll") {
+                                        let src = entry.path();
+                                        let dst = format!("{}\\{}", target_dir, file_name);
+                                        let _ = fs::copy(&src, &dst);
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-            
-            // 复制GDAL数据文件
-            if Path::new(&gdal_data_path).exists() {
-                let target_gdal_data = format!("{}\\gdal-data", target_dir);
-                let _ = copy_dir_recursive(&gdal_data_path, &target_gdal_data);
-            }
-            
-            // 复制PROJ数据文件
-            let proj_data_path = format!("{}\\share\\proj", gdal_home);
-            if Path::new(&proj_data_path).exists() {
-                let target_proj_data = format!("{}\\proj-data", target_dir);
-                let _ = copy_dir_recursive(&proj_data_path, &target_proj_data);
+                
+                // 复制GDAL数据文件
+                if Path::new(&gdal_data_path).exists() {
+                    let target_gdal_data = format!("{}\\gdal-data", target_dir);
+                    let _ = copy_dir_recursive(&gdal_data_path, &target_gdal_data);
+                }
+                
+                // 复制PROJ数据文件
+                let proj_data_path = format!("{}\\share\\proj", gdal_home);
+                if Path::new(&proj_data_path).exists() {
+                    let target_proj_data = format!("{}\\proj-data", target_dir);
+                    let _ = copy_dir_recursive(&proj_data_path, &target_proj_data);
+                }
             }
         }
     }
