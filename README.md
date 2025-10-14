@@ -26,7 +26,7 @@
 - ✅ **MapLibre引擎** - 替换Leaflet，性能大幅提升
 - ✅ **测量工具** - 距离、面积测量功能
 
-详见 [CHANGELOG.md](./CHANGELOG.md)
+详见 [CHANGELOG.md](./CHANGELOG.md) | [发布说明](./docs/releases/v0.2.0.md)
 
 ## 功能特性
 
@@ -110,8 +110,8 @@ MiniGIS/
 
 - 📘 [用户使用指南](./docs/USER_GUIDE.md) - 快速上手和功能介绍
 - 📙 [开发指南](./docs/DEVELOPMENT.md) - 技术架构和开发说明
-- 📗 [符号系统使用指南](./SYMBOLOGY_GUIDE.md) - 符号自定义详解
-- 📕 [GDAL 环境配置](./GDAL_SETUP.md) - GDAL 安装和配置
+- 📕 [GDAL 环境配置](./docs/GDAL_SETUP.md) - GDAL 安装和配置
+- 🔧 [开发脚本](./scripts/) - 开发和发布脚本
 
 ## 快速使用
 
