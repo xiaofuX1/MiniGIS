@@ -6,7 +6,15 @@ import './HistoryImageControl.css';
 const GEOVIS_TOKEN = '488fb6d94c9f290d58a855e648fe70d7f02db5ef9e496a07165ecfe3d2ccc4da';
 const AVAILABLE_YEARS = [2021, 2022];
 
-const HistoryImageControl: React.FC = () => {
+interface HistoryImageControlProps {
+  leftOffset?: number;
+  bottomOffset?: number;
+}
+
+const HistoryImageControl: React.FC<HistoryImageControlProps> = ({ 
+  leftOffset = 15, 
+  bottomOffset = 15 
+}) => {
   const [selectedYear, setSelectedYear] = useState<number>(2021);
   const [isVisible, setIsVisible] = useState<boolean>(false);
   const { layers, addLayer, removeLayer } = useLayerStore();
@@ -59,7 +67,14 @@ const HistoryImageControl: React.FC = () => {
   }
 
   return (
-    <div className="history-image-control">
+    <div 
+      className="history-image-control"
+      style={{
+        left: `${leftOffset}px`,
+        bottom: `${bottomOffset}px`,
+        transition: 'left 0.15s ease-out, bottom 0.15s ease-out'
+      }}
+    >
       <div className="control-content">
         <div className="year-display">{selectedYear}</div>
         <Slider

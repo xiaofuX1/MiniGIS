@@ -1,18 +1,17 @@
 .north-arrow-container {
   position: absolute;
   top: 16px;
-  right: 16px;
-  z-index: 1000;
   width: 60px;
   height: 60px;
+  z-index: 1000;
   cursor: default;
-  transition: all 0.2s ease;
   filter: drop-shadow(0 1px 3px rgba(255, 255, 255, 0.8));
 }
 
 .north-arrow-container:hover {
   filter: drop-shadow(0 2px 5px rgba(255, 255, 255, 1));
   transform: scale(1.08);
+  transition: all 0.2s;
 }
 
 .north-arrow-svg {

@@ -1,7 +1,6 @@
 .history-image-control {
   position: absolute;
-  bottom: 15px;
-  left: 15px;
+  /* bottom 和 left 通过 inline style 动态设置 */
   z-index: 1000;
 }
 

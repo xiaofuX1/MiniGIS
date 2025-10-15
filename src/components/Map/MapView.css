@@ -8,12 +8,18 @@
 .map-container {
   width: 100%;
   height: 100%;
+  /* 硬件加速优化 */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .map-toolbar {
   position: absolute;
   top: 16px;
-  left: 16px;
+  /* left 通过 inline style 动态设置 */
   z-index: 1000;
   display: flex;
   flex-direction: column;

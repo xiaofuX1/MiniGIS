@@ -3,14 +3,11 @@ import { Layout } from 'antd';
 import TitleBar from './components/TitleBar/TitleBar';
 import RibbonMenu from './components/Ribbon/RibbonMenu';
 import MapView from './components/Map/MapView';
-import LayerPanel from './components/Panels/LayerPanel';
-import AttributePanel from './components/Panels/AttributePanel';
-import RightPanel from './components/Panels/RightPanel';
+import WindowManager from './components/Panels/WindowManager';
 import StatusBar from './components/StatusBar/StatusBar';
-import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { useProjectStore } from './stores/projectStore';
 import { useLayerStore } from './stores/layerStore';
-import { useUiStore } from './stores/uiStore';
+import { useWindowStore } from './stores/windowStore';
 import { invoke } from '@tauri-apps/api/core';
 import './App.css';
 
@@ -18,13 +15,7 @@ const { Content } = Layout;
 
 function App() {
   const [appReady, setAppReady] = useState(false);
-  const { leftPanelCollapsed, rightPanelCollapsed, setLeftPanelCollapsed, setRightPanelCollapsed } = useUiStore();
-  
   const { currentProject } = useProjectStore();
-  const { attributeTableLayerId, setAttributeTableLayer } = useLayerStore();
-  
-  // 根据 attributeTableLayerId 决定底部面板是否显示
-  const bottomPanelCollapsed = !attributeTableLayerId;
 
   // 禁用右键菜单（保留开发者工具用于调试）
   useEffect(() => {
@@ -141,64 +132,17 @@ function App() {
     initApp();
   }, []);
 
-  // 面板状态变化时通知地图刷新
-  useEffect(() => {
-    if (!appReady) return;
-    
-    // 延迟一下让面板动画完成
-    const timer = setTimeout(() => {
-      window.dispatchEvent(new Event('panelResize'));
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [leftPanelCollapsed, rightPanelCollapsed, bottomPanelCollapsed, appReady]);
-
   return (
     <Layout className="h-screen overflow-hidden">
       <TitleBar />
       <RibbonMenu />
       
-      <Content className="flex-1 overflow-hidden">
-        <PanelGroup direction="horizontal" className="h-full">
-          {/* 左侧面板 - 图层管理 */}
-          {!leftPanelCollapsed && (
-            <>
-              <Panel defaultSize={20} minSize={15} maxSize={30}>
-                <LayerPanel onClose={() => setLeftPanelCollapsed(true)} />
-              </Panel>
-              <PanelResizeHandle className="w-1 bg-gray-200 hover:bg-primary-400 transition-colors" />
-            </>
-          )}
-          
-          {/* 中间主视图 */}
-          <Panel defaultSize={60}>
-            <PanelGroup direction="vertical" className="h-full">
-              {/* 地图视图 */}
-              <Panel defaultSize={bottomPanelCollapsed ? 100 : 70}>
-                <MapView />
-              </Panel>
-              
-              {/* 底部面板 - 属性表 */}
-              {!bottomPanelCollapsed && (
-                <>
-                  <PanelResizeHandle className="h-1 bg-gray-200 hover:bg-primary-400 transition-colors" />
-                  <Panel defaultSize={30} minSize={20} maxSize={50}>
-                    <AttributePanel onClose={() => setAttributeTableLayer(null)} />
-                  </Panel>
-                </>
-              )}
-            </PanelGroup>
-          </Panel>
-          
-          {/* 右侧面板 - 要素信息/符号设置 */}
-          {!rightPanelCollapsed && (
-            <>
-              <PanelResizeHandle className="w-1 bg-gray-200 hover:bg-primary-400 transition-colors" />
-              <Panel defaultSize={20} minSize={15} maxSize={30}>
-                <RightPanel onClose={() => setRightPanelCollapsed(true)} />
-              </Panel>
-            </>
-          )}
-        </PanelGroup>
+      <Content className="flex-1 overflow-hidden" style={{ position: 'relative' }}>
+        {/* 地图视图 */}
+        <MapView />
+        
+        {/* 窗口管理器 */}
+        <WindowManager />
       </Content>
       
       <StatusBar />

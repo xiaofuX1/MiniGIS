@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Table, Input, Button, Space, message, Tooltip } from "antd";
+import { Table, Input, Button, Space, message, Tooltip, Tabs } from "antd";
 import {
   SearchOutlined,
   ExportOutlined,
@@ -16,8 +16,9 @@ interface AttributePanelProps {
   onClose?: () => void;
 }
 
-const AttributePanel: React.FC<AttributePanelProps> = ({ onClose }) => {
-  const { layers, attributeTableLayerId } = useLayerStore();
+// 单个属性表组件
+const SingleAttributeTable: React.FC<{ layerId: string }> = ({ layerId }) => {
+  const { layers } = useLayerStore();
   const { selectedFeatureId, setSelectedFeatureId, setSelectedFeatures } =
     useSelectionStore();
   const [data, setData] = useState<any[]>([]);
@@ -30,10 +31,10 @@ const AttributePanel: React.FC<AttributePanelProps> = ({ onClose }) => {
   const contentRef = React.useRef<HTMLDivElement>(null);
   const tableBodyRef = React.useRef<HTMLDivElement>(null);
 
-  // 根据 attributeTableLayerId 获取当前显示的图层 - 使用 useMemo 避免不必要的重渲染
+  // 获取当前显示的图层
   const currentLayer = useMemo(() => {
-    return layers.find((l) => l.id === attributeTableLayerId);
-  }, [layers, attributeTableLayerId]);
+    return layers.find((l) => l.id === layerId);
+  }, [layers, layerId]);
 
   // 仅在图层ID或路径变化时重新加载数据
   const currentLayerPath = currentLayer?.source?.path;
@@ -67,7 +68,7 @@ const AttributePanel: React.FC<AttributePanelProps> = ({ onClose }) => {
     return () => {
       resizeObserver.disconnect();
     };
-  }, [attributeTableLayerId]);
+  }, [layerId]);
 
   // 当选中的要素ID改变时，自动滚动到对应行
   useEffect(() => {
@@ -266,20 +267,8 @@ const AttributePanel: React.FC<AttributePanelProps> = ({ onClose }) => {
   if (!currentLayer) {
     return (
       <div className="attribute-panel">
-        <div className="panel-header">
-          <div className="header-left">
-            <span className="header-title">属性表</span>
-          </div>
-          <div className="header-right">
-            {onClose && (
-              <button onClick={onClose} className="panel-close-btn">
-                ✕
-              </button>
-            )}
-          </div>
-        </div>
         <div className="attribute-panel-content empty">
-          <p>请选择一个图层查看属性表</p>
+          <p>图层不存在</p>
         </div>
       </div>
     );
@@ -287,73 +276,50 @@ const AttributePanel: React.FC<AttributePanelProps> = ({ onClose }) => {
 
   return (
     <div className="attribute-panel">
-      <div className="panel-header">
-        <div className="header-left">
-          <span className="header-title">属性表</span>
-          <span className="header-divider">|</span>
-          <span className="header-layer-name">{currentLayer.name}</span>
-          <span className="header-count">({totalCount} 条记录)</span>
-          {selectedFeatureId && (
-            <span
-              className="header-selected"
-              style={{
-                marginLeft: "8px",
-                padding: "2px 8px",
-                background: "#e6f7ff",
-                border: "1px solid #1890ff",
-                borderRadius: "4px",
-                fontSize: "12px",
-                color: "#1890ff",
-                fontWeight: 500,
-              }}
-            >
-              已选中: 第{" "}
-              {data.find((row) => row._featureId === selectedFeatureId)?._index ||
-                "?"}{" "}
-              行
-            </span>
-          )}
-        </div>
-        <div className="header-right">
-          <Space size="small">
-            <Input
-              placeholder="搜索..."
-              prefix={<SearchOutlined />}
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              onPressEnter={handleSearch}
-              size="small"
-              style={{ width: 140 }}
-              allowClear
-            />
+      <div className="attribute-panel-toolbar">
+        <Space size="small" style={{ flex: 1 }}>
+          <span className="toolbar-info">
+            {totalCount} 条记录
             {selectedFeatureId && (
-              <Button
-                size="small"
-                icon={<ClearOutlined />}
-                onClick={handleClearSelection}
-                type="primary"
-                danger
-              >
-                清除选择
-              </Button>
+              <span className="toolbar-selected">
+                · 已选中第 {data.find((row) => row._featureId === selectedFeatureId)?._index || "?"} 行
+              </span>
             )}
+          </span>
+        </Space>
+        <Space size="small">
+          <Input
+            placeholder="搜索..."
+            prefix={<SearchOutlined />}
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            onPressEnter={handleSearch}
+            size="small"
+            style={{ width: 140 }}
+            allowClear
+          />
+          {selectedFeatureId && (
             <Button
               size="small"
-              icon={<ExportOutlined />}
-              onClick={handleExport}
-            />
-            <Button
-              size="small"
-              icon={<ReloadOutlined />}
-              onClick={loadAttributeData}
-            />
-          </Space>
-          {onClose && (
-            <button onClick={onClose} className="panel-close-btn">
-              ✕
-            </button>
+              icon={<ClearOutlined />}
+              onClick={handleClearSelection}
+              type="primary"
+              danger
+            >
+              清除选择
+            </Button>
           )}
-        </div>
+          <Button
+            size="small"
+            icon={<ExportOutlined />}
+            onClick={handleExport}
+          />
+          <Button
+            size="small"
+            icon={<ReloadOutlined />}
+            onClick={loadAttributeData}
+          />
+        </Space>
       </div>
 
       <div className="attribute-panel-content" ref={contentRef}>
@@ -380,6 +346,50 @@ const AttributePanel: React.FC<AttributePanelProps> = ({ onClose }) => {
           })}
         />
       </div>
+    </div>
+  );
+};
+
+// 主属性表面板组件（支持多标签页）
+const AttributePanel: React.FC<AttributePanelProps> = ({ onClose }) => {
+  const { layers, attributeTableLayerIds, activeAttributeTableLayerId, setActiveAttributeTableLayer, removeAttributeTableLayer } = useLayerStore();
+
+  if (attributeTableLayerIds.length === 0) {
+    return (
+      <div className="attribute-panel">
+        <div className="attribute-panel-content empty">
+          <p>请选择一个图层查看属性表</p>
+        </div>
+      </div>
+    );
+  }
+
+  const items = attributeTableLayerIds.map(layerId => {
+    const layer = layers.find(l => l.id === layerId);
+    return {
+      key: layerId,
+      label: layer?.name || layerId,
+      children: <SingleAttributeTable layerId={layerId} />,
+      closable: true,
+    };
+  });
+
+  return (
+    <div className="attribute-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Tabs
+        type="editable-card"
+        activeKey={activeAttributeTableLayerId || undefined}
+        onChange={(key) => setActiveAttributeTableLayer(key)}
+        onEdit={(targetKey, action) => {
+          if (action === 'remove' && typeof targetKey === 'string') {
+            removeAttributeTableLayer(targetKey);
+          }
+        }}
+        items={items}
+        hideAdd
+        style={{ flex: 1, overflow: 'hidden' }}
+        tabBarStyle={{ marginBottom: 0, paddingLeft: 8, paddingRight: 8 }}
+      />
     </div>
   );
 };

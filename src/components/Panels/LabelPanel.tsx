@@ -65,7 +65,7 @@ const LabelPanel: React.FC<LabelPanelProps> = ({ layer, onClose }) => {
       fontWeight: allValues.fontWeight || 'normal',
       haloColor: typeof allValues.haloColor === 'string' ? allValues.haloColor : allValues.haloColor?.toHexString?.() || '#ffffff',
       haloWidth: allValues.haloWidth,
-      offset: [allValues.offsetX, -allValues.offsetY], // Y轴取反，因为MapLibre坐标系与UI相反
+      offset: [allValues.offsetX, -allValues.offsetY], // Y轴取反，因为地图坐标系与UI相反
       anchor: allValues.anchor,
     };
     

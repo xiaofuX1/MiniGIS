@@ -1,0 +1,249 @@
+.draggable-panel {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 1px solid #d9d9d9;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+  will-change: transform;
+}
+
+.draggable-panel.dragging {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  opacity: 0.95;
+  transition: none; /* 拖拽时禁用过渡动画，避免卡顿 */
+  cursor: grabbing !important;
+}
+
+.draggable-panel.dragging * {
+  cursor: grabbing !important;
+}
+
+.draggable-panel-floating {
+  border-radius: 6px;
+}
+
+/* 标题栏 */
+.draggable-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: linear-gradient(to bottom, #fafafa, #f0f0f0);
+  border-bottom: 1px solid #d9d9d9;
+  cursor: move;
+  user-select: none;
+  min-height: 36px;
+}
+
+.draggable-panel-header:active {
+  cursor: grabbing;
+}
+
+.draggable-panel-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #262626;
+}
+
+.draggable-panel-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #8c8c8c;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.draggable-panel-close:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #262626;
+}
+
+/* 内容区域 */
+.draggable-panel-content {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* 确保子元素能够正确收缩和滚动 */
+.draggable-panel-content > * {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* 自定义滚动条样式 */
+.draggable-panel-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.draggable-panel-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.draggable-panel-content::-webkit-scrollbar-thumb {
+  background: #bbb;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.draggable-panel-content::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+.draggable-panel-content::-webkit-scrollbar-corner {
+  background: #f1f1f1;
+}
+
+/* 调整大小的手柄 */
+.resize-handle {
+  position: absolute;
+  background: transparent;
+  z-index: 10;
+}
+
+.resize-handle-top,
+.resize-handle-bottom {
+  left: 0;
+  right: 0;
+  height: 4px;
+  cursor: ns-resize;
+}
+
+.resize-handle-top {
+  top: 0;
+}
+
+.resize-handle-bottom {
+  bottom: 0;
+}
+
+.resize-handle-left,
+.resize-handle-right {
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: ew-resize;
+}
+
+.resize-handle-left {
+  left: 0;
+}
+
+.resize-handle-right {
+  right: 0;
+}
+
+/* 角落的调整手柄 */
+.resize-handle-top-left,
+.resize-handle-top-right,
+.resize-handle-bottom-left,
+.resize-handle-bottom-right {
+  width: 8px;
+  height: 8px;
+}
+
+.resize-handle-top-left {
+  top: 0;
+  left: 0;
+  cursor: nwse-resize;
+}
+
+.resize-handle-top-right {
+  top: 0;
+  right: 0;
+  cursor: nesw-resize;
+}
+
+.resize-handle-bottom-left {
+  bottom: 0;
+  left: 0;
+  cursor: nesw-resize;
+}
+
+.resize-handle-bottom-right {
+  bottom: 0;
+  right: 0;
+  cursor: nwse-resize;
+}
+
+/* 停靠状态下的调整手柄高亮 */
+.draggable-panel-left .resize-handle-right,
+.draggable-panel-right .resize-handle-left,
+.draggable-panel-bottom .resize-handle-top {
+  background: rgba(24, 144, 255, 0.1);
+  transition: background 0.2s;
+}
+
+.draggable-panel-left .resize-handle-right:hover,
+.draggable-panel-right .resize-handle-left:hover,
+.draggable-panel-bottom .resize-handle-top:hover {
+  background: rgba(24, 144, 255, 0.3);
+}
+
+/* 吸附指示器 */
+.snap-indicator {
+  position: fixed;
+  background: rgba(24, 144, 255, 0.2);
+  border: 2px solid #1890ff;
+  pointer-events: none;
+  z-index: 9999;
+  transition: all 0.2s;
+}
+
+.snap-indicator-left {
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 300px;
+}
+
+.snap-indicator-right {
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 300px;
+}
+
+.snap-indicator-bottom {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 300px;
+}
+
+/* 停靠状态的特殊样式 */
+.draggable-panel-left,
+.draggable-panel-right,
+.draggable-panel-bottom {
+  border-radius: 0;
+}
+
+.draggable-panel-left {
+  border-left: none;
+  border-top: none;
+  border-bottom: none;
+}
+
+.draggable-panel-right {
+  border-right: none;
+  border-top: none;
+  border-bottom: none;
+}
+
+.draggable-panel-bottom {
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+}

@@ -3,12 +3,11 @@ import "./NorthArrow.css";
 
 const NorthArrow: React.FC = () => {
   return (
-    <div className="north-arrow-container" title="指北针">
-      <svg
-        className="north-arrow-svg"
-        viewBox="0 0 100 100"
-        xmlns="http://www.w3.org/2000/svg"
-      >
+    <svg
+      className="north-arrow-svg"
+      viewBox="0 0 100 100"
+      xmlns="http://www.w3.org/2000/svg"
+    >
         {/* 北方向箭头 - 红色 */}
         <path
           d="M 50 10 L 65 50 L 50 45 L 35 50 Z"
@@ -40,8 +39,7 @@ const NorthArrow: React.FC = () => {
         >
           N
         </text>
-      </svg>
-    </div>
+    </svg>
   );
 };
 

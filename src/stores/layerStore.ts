@@ -48,7 +48,8 @@ export interface Layer {
 interface LayerStore {
   layers: Layer[];
   selectedLayer: Layer | null;
-  attributeTableLayerId: string | null; // 当前打开属性表的图层ID
+  attributeTableLayerIds: string[]; // 当前打开属性表的图层ID列表
+  activeAttributeTableLayerId: string | null; // 当前激活的属性表标签页
   addLayer: (layer: Layer) => Promise<void>;
   removeLayer: (layerId: string) => void;
   updateLayer: (layerId: string, updates: Partial<Layer>) => void;
@@ -57,7 +58,9 @@ interface LayerStore {
   selectLayer: (layer: Layer | null) => void;
   reorderLayers: (layers: Layer[]) => void;
   clearLayers: () => void;
-  setAttributeTableLayer: (layerId: string | null) => void;
+  addAttributeTableLayer: (layerId: string) => void;
+  removeAttributeTableLayer: (layerId: string) => void;
+  setActiveAttributeTableLayer: (layerId: string | null) => void;
   saveAllState: () => void; // 保存完整状态
 }
 
@@ -91,7 +94,8 @@ const defaultBasemap: Layer = {
 export const useLayerStore = create<LayerStore>((set, get) => ({
   layers: [defaultBasemapAnnotation, defaultBasemap],  // 初始化时包含默认底图和注记层
   selectedLayer: null,
-  attributeTableLayerId: null,
+  attributeTableLayerIds: [],
+  activeAttributeTableLayerId: null,
 
   addLayer: async (layer: Layer) => {
     try {
@@ -209,15 +213,39 @@ export const useLayerStore = create<LayerStore>((set, get) => ({
     set({ layers: [], selectedLayer: null });
   },
 
-  setAttributeTableLayer: (layerId: string | null) => {
-    set({ attributeTableLayerId: layerId });
-    // 如果打开了属性表，自动选中该图层
-    if (layerId) {
+  addAttributeTableLayer: (layerId: string) => {
+    const { attributeTableLayerIds } = get();
+    if (!attributeTableLayerIds.includes(layerId)) {
+      set({ 
+        attributeTableLayerIds: [...attributeTableLayerIds, layerId],
+        activeAttributeTableLayerId: layerId
+      });
+      // 自动选中该图层
       const layer = get().layers.find(l => l.id === layerId);
       if (layer) {
         set({ selectedLayer: layer });
       }
+    } else {
+      // 如果已经打开，则切换到该标签页
+      set({ activeAttributeTableLayerId: layerId });
     }
+  },
+
+  removeAttributeTableLayer: (layerId: string) => {
+    const { attributeTableLayerIds, activeAttributeTableLayerId } = get();
+    const newLayerIds = attributeTableLayerIds.filter(id => id !== layerId);
+    const newActiveId = activeAttributeTableLayerId === layerId 
+      ? (newLayerIds.length > 0 ? newLayerIds[newLayerIds.length - 1] : null)
+      : activeAttributeTableLayerId;
+    
+    set({ 
+      attributeTableLayerIds: newLayerIds,
+      activeAttributeTableLayerId: newActiveId
+    });
+  },
+
+  setActiveAttributeTableLayer: (layerId: string | null) => {
+    set({ activeAttributeTableLayerId: layerId });
   },
   
   saveAllState: () => {

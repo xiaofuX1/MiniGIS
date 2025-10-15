@@ -1,0 +1,221 @@
+.dock-container {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 1px solid #d9d9d9;
+  overflow: hidden;
+  /* 只对 box-shadow 应用过渡，不影响尺寸变化 */
+  transition: box-shadow 0.2s ease;
+  /* 使用 will-change 提示浏览器优化 */
+  will-change: width, height;
+}
+
+.dock-container.dragging {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  opacity: 0.95;
+}
+
+.dock-container-left {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  /* width 由 JS 动态设置 */
+  border-left: none;
+  border-top: none;
+  border-bottom: none;
+  /* 不设置overflow，让内部flex布局自动处理 */
+}
+
+.dock-container-right {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  /* width 由 JS 动态设置 */
+  border-right: none;
+  border-top: none;
+  border-bottom: none;
+  /* 不设置overflow，让内部flex布局自动处理 */
+}
+
+.dock-container-bottom {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-bottom: none;
+  border-left: none;
+  border-right: none;
+  /* 不设置overflow，让内部flex布局自动处理 */
+}
+
+.dock-window-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: linear-gradient(to bottom, #fafafa, #f0f0f0);
+  border-bottom: 1px solid #d9d9d9;
+  min-height: 36px;
+  flex-shrink: 0; /* 防止标题栏被压缩 */
+}
+
+.dock-window-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #262626;
+}
+
+.dock-window-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #8c8c8c;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.dock-window-close:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #262626;
+}
+
+.dock-window-content {
+  flex: 1;
+  overflow: hidden; /* 容器本身不滚动，由子面板内部滚动 */
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* 允许flex子元素正确收缩 */
+  min-width: 0;
+}
+
+.dock-window-content > * {
+  flex: 1; /* 占满容器空间 */
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden; /* 确保子元素不溢出 */
+}
+
+.dock-tabs {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dock-tabs .ant-tabs-nav {
+  margin: 0;
+  padding: 4px 8px;
+  background: linear-gradient(to bottom, #fafafa, #f0f0f0);
+  border-bottom: 1px solid #d9d9d9;
+  flex-shrink: 0;
+}
+
+.dock-tabs .ant-tabs-content-holder {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.dock-tabs .ant-tabs-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.dock-tabs .ant-tabs-tabpane {
+  height: 100%;
+  display: none;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.dock-tabs .ant-tabs-tabpane-active {
+  display: flex !important;
+  overflow: hidden; /* 让子面板内部处理滚动 */
+}
+
+/* 标签页内的面板内容区域 */
+.dock-tabs .ant-tabs-tabpane-active > .dock-window-content {
+  overflow: hidden;
+}
+
+.dock-tabs .ant-tabs-tabpane-active > .dock-window-content > * {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.dock-tabs .ant-tabs-tab {
+  padding: 6px 12px !important;
+  font-size: 13px;
+  border-radius: 4px 4px 0 0;
+  transition: all 0.2s;
+  background: transparent;
+}
+
+.dock-tabs .ant-tabs-tab:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.dock-tabs .ant-tabs-tab-active {
+  background-color: #fff !important;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dock-tabs .ant-tabs-tab-remove {
+  margin-left: 4px;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.dock-tabs .ant-tabs-tab-remove:hover {
+  color: #262626;
+}
+
+/* 调整大小手柄 */
+.dock-resize-handle {
+  position: absolute;
+  background: transparent;
+  z-index: 1000;
+  transition: background-color 0.15s ease-out;
+}
+
+.dock-resize-handle:hover,
+.dock-container.resizing .dock-resize-handle {
+  background-color: rgba(24, 144, 255, 0.4);
+}
+
+.dock-resize-handle-left {
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
+}
+
+.dock-resize-handle-right {
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
+}
+
+.dock-resize-handle-bottom {
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 6px;
+  cursor: ns-resize;
+}
+
+.dock-container.resizing {
+  user-select: none;
+  pointer-events: auto;
+}

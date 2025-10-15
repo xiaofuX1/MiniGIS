@@ -7,7 +7,7 @@
 ![Tauri](https://img.shields.io/badge/Tauri-2.0-orange.svg)
 ![React](https://img.shields.io/badge/React-18-blue.svg)
 
-一个基于 Tauri、React 和 MapLibre GL 构建的现代桌面 GIS 应用程序
+一个基于 Tauri、React 和 OpenLayers 构建的现代桌面 GIS 应用程序
 
 [功能特性](#功能特性) • [快速开始](#快速开始) • [文档](#文档) • [下载](https://github.com/xiaofuX1/MiniGIS/releases)
 
@@ -23,7 +23,7 @@
 - ✅ **坐标转换** - 自动转换到WGS84，支持投影坐标系
 - ✅ **MSI安装包** - 企业级Windows安装程序
 - ✅ **符号系统** - 完整的点、线、面符号自定义
-- ✅ **MapLibre引擎** - 替换Leaflet，性能大幅提升
+- ✅ **OpenLayers引擎** - 企业级开源地图库，功能强大
 - ✅ **测量工具** - 距离、面积测量功能
 
 详见 [CHANGELOG.md](./CHANGELOG.md) | [发布说明](./docs/releases/v0.2.0.md)
@@ -42,7 +42,7 @@
 - **前端框架**: React 18 + TypeScript
 - **桌面框架**: Tauri 2.0
 - **UI 组件库**: Ant Design 5
-- **地图引擎**: MapLibre GL JS 5.x
+- **地图引擎**: OpenLayers 9.x
 - **状态管理**: Zustand + MobX
 - **样式方案**: Tailwind CSS + SCSS
 - **后端语言**: Rust
@@ -191,7 +191,7 @@ MiniGIS/
 ## 🙏 致谢
 
 - [Tauri](https://tauri.app/) - 强大的桌面应用框架
-- [MapLibre GL JS](https://maplibre.org/) - 开源地图引擎
+- [OpenLayers](https://openlayers.org/) - 企业级开源地图引擎
 - [GDAL](https://gdal.org/) - 地理空间数据抽象库
 - [Ant Design](https://ant.design/) - 企业级UI组件库
 

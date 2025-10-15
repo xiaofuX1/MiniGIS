@@ -27,7 +27,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useLayerStore, Layer } from '../../stores/layerStore';
-import { useUiStore } from '../../stores/uiStore';
+import { useWindowStore } from '../../stores/windowStore';
 import './LayerPanel.css';
 
 interface LayerPanelProps {
@@ -107,8 +107,8 @@ const SortableLayerItem: React.FC<SortableLayerItemProps> = ({
 };
 
 const LayerPanel: React.FC<LayerPanelProps> = ({ onClose }) => {
-  const { layers, toggleLayerVisibility, removeLayer, clearLayers, reorderLayers, setAttributeTableLayer, attributeTableLayerId } = useLayerStore();
-  const { openSymbologyPanel, openLabelPanel } = useUiStore();
+  const { layers, toggleLayerVisibility, removeLayer, clearLayers, reorderLayers, addAttributeTableLayer, removeAttributeTableLayer, attributeTableLayerIds } = useLayerStore();
+  const { showWindow } = useWindowStore();
   
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -152,15 +152,15 @@ const LayerPanel: React.FC<LayerPanelProps> = ({ onClose }) => {
     switch (action) {
       case 'delete':
         removeLayer(layerId);
-        // 如果删除的图层正在显示属性表，关闭属性表
-        if (attributeTableLayerId === layerId) {
-          setAttributeTableLayer(null);
+        // 如果删除的图层正在显示属性表，关闭该标签页
+        if (attributeTableLayerIds.includes(layerId)) {
+          removeAttributeTableLayer(layerId);
         }
         break;
       case 'properties':
         break;
       case 'symbology':
-        openSymbologyPanel(layerId);
+        showWindow('symbology', { layerId });
         break;
       case 'zoom':
         if (layer && layer.extent) {
@@ -171,17 +171,14 @@ const LayerPanel: React.FC<LayerPanelProps> = ({ onClose }) => {
         }
         break;
       case 'attributeTable':
-        // 切换属性表显示状态
-        if (attributeTableLayerId === layerId) {
-          setAttributeTableLayer(null);
-        } else {
-          setAttributeTableLayer(layerId);
-        }
+        // 打开属性表窗口
+        addAttributeTableLayer(layerId);
+        showWindow('attribute-table', { layerId });
         break;
       case 'label':
         // 打开标注配置面板
         if (layer) {
-          openLabelPanel(layer.id);
+          showWindow('label', { layerId: layer.id });
         }
         break;
       default:
@@ -192,7 +189,6 @@ const LayerPanel: React.FC<LayerPanelProps> = ({ onClose }) => {
   const layerMenuItems = (layerId: string) => {
     const layer = layers.find(l => l.id === layerId);
     const isVectorLayer = layer?.type === 'vector';
-    const isAttributeTableOpen = attributeTableLayerId === layerId;
     
     const items: any[] = [
       {
@@ -208,7 +204,7 @@ const LayerPanel: React.FC<LayerPanelProps> = ({ onClose }) => {
       items.push(
         {
           key: 'attributeTable',
-          label: isAttributeTableOpen ? '关闭属性表' : '打开属性表',
+          label: '属性表',
           icon: <TableOutlined />,
           onClick: () => handleLayerAction('attributeTable', layerId),
         },
@@ -268,15 +264,6 @@ const LayerPanel: React.FC<LayerPanelProps> = ({ onClose }) => {
 
   return (
     <div className="layer-panel">
-        <div className="panel-header">
-          <span>图层管理</span>
-          {onClose && (
-            <button onClick={onClose} className="panel-close-btn">
-              ✕
-            </button>
-          )}
-        </div>
-      
       <div className="layer-panel-content">
         {layers.length === 0 ? (
           <div className="empty-state">

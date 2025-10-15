@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { 
   PlusOutlined, DeleteOutlined, SettingOutlined,
-  SelectOutlined, DragOutlined, ZoomInOutlined,
+  SelectOutlined, DragOutlined, ZoomInOutlined, ZoomOutOutlined,
   TableOutlined, BarChartOutlined, HeatMapOutlined,
   EnvironmentOutlined, LineChartOutlined,
-  GlobalOutlined, FolderOpenOutlined
+  GlobalOutlined, FolderOpenOutlined, InfoCircleOutlined,
+  FullscreenOutlined, BgColorsOutlined, FolderViewOutlined,
+  EyeOutlined, FontSizeOutlined
 } from '@ant-design/icons';
-import { Tooltip, Dropdown, message } from 'antd';
+import { Tooltip, Dropdown, message, Modal } from 'antd';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { useLayerStore } from '../../stores/layerStore';
 import { useSelectionStore } from '../../stores/selectionStore';
-import { useUiStore } from '../../stores/uiStore';
+import { useWindowStore } from '../../stores/windowStore';
 import './RibbonMenu.css';
 
 interface RibbonTab {
@@ -36,9 +38,9 @@ interface RibbonItem {
 
 const RibbonMenu: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
-  const { addLayer, layers, removeLayer, selectedLayer, setAttributeTableLayer } = useLayerStore();
+  const { addLayer, layers, removeLayer, selectedLayer, addAttributeTableLayer, selectLayer } = useLayerStore();
   const { clearSelection, setIsSelecting } = useSelectionStore();
-  const { toggleLeftPanel, toggleRightPanel } = useUiStore();
+  const { showWindow, toggleWindow, updateWindow } = useWindowStore();
 
   const handleBasemapChange = (basemapType: string) => {
     // 先检查是否已经是当前底图
@@ -239,20 +241,22 @@ const RibbonMenu: React.FC = () => {
     window.dispatchEvent(new CustomEvent('mapToolClick', { detail: { tool: 'select' } }));
   };
 
+  // 导航菜单项（需要在 handleSelect 之后定义）
+  const navigationMenuItems = [
+    { key: 'explore', label: '浏览', icon: <EyeOutlined />, onClick: () => handleMapTool('pan') },
+    { key: 'full-extent', label: '完全', icon: <FullscreenOutlined />, onClick: () => handleMapTool('fullExtent') },
+    { key: 'zoom-in', label: '放大', icon: <ZoomInOutlined />, onClick: () => handleMapTool('zoomIn') },
+    { key: 'zoom-out', label: '缩小', icon: <ZoomOutOutlined />, onClick: () => handleMapTool('zoomOut') },
+    { key: 'divider', type: 'divider' as const },
+    { key: 'select', label: '选择', icon: <SelectOutlined />, onClick: handleSelect },
+  ];
+
   // 处理清除选择
   const handleClearSelection = () => {
     clearSelection();
     window.dispatchEvent(new CustomEvent('clearSelection'));
   };
 
-  // 处理打开属性表
-  const handleOpenAttributeTable = () => {
-    if (selectedLayer && selectedLayer.type === 'vector') {
-      setAttributeTableLayer(selectedLayer.id);
-    } else {
-      message.warning('请先选择一个矢量图层');
-    }
-  };
 
   // 处理创建新图层
   const handleCreateLayer = (layerType: 'point' | 'line' | 'polygon') => {
@@ -284,22 +288,166 @@ const RibbonMenu: React.FC = () => {
   };
 
   // 处理面板切换
-  const handleTogglePanel = (panel: 'catalog' | 'properties' | 'table') => {
+  const handleTogglePanel = (panel: 'catalog' | 'properties' | 'table' | 'symbology' | 'label') => {
     switch (panel) {
       case 'catalog':
-        toggleLeftPanel();
+        // 图层管理
+        toggleWindow('layer-panel');
         break;
       case 'properties':
-        toggleRightPanel();
+        // 要素信息
+        if (selectedLayer) {
+          showWindow('feature-info');
+        } else {
+          handleLayerSelection('properties');
+        }
+        break;
+      case 'symbology':
+        // 符号系统 - 需要选择矢量图层
+        if (selectedLayer && selectedLayer.type === 'vector') {
+          updateWindow('symbology', {
+            title: `符号设置 - ${selectedLayer.name}`,
+            metadata: { layerId: selectedLayer.id }
+          });
+          showWindow('symbology', { layerId: selectedLayer.id });
+        } else {
+          handleLayerSelection('symbology');
+        }
+        break;
+      case 'label':
+        // 标注 - 需要选择矢量图层
+        if (selectedLayer && selectedLayer.type === 'vector') {
+          updateWindow('label', {
+            title: `标注设置 - ${selectedLayer.name}`,
+            metadata: { layerId: selectedLayer.id }
+          });
+          showWindow('label', { layerId: selectedLayer.id });
+        } else {
+          handleLayerSelection('label');
+        }
         break;
       case 'table':
+        // 属性表 - 需要矢量图层
         if (selectedLayer && selectedLayer.type === 'vector') {
-          setAttributeTableLayer(selectedLayer.id);
+          addAttributeTableLayer(selectedLayer.id);
+          showWindow('attribute-table', { layerId: selectedLayer.id });
         } else {
-          message.warning('请先选择一个矢量图层');
+          handleLayerSelection('table');
         }
         break;
     }
+  };
+
+  // 智能处理图层选择：只有一个矢量图层直接使用，多个才弹窗
+  const handleLayerSelection = (action: 'properties' | 'symbology' | 'table' | 'label') => {
+    const vectorLayers = layers.filter(l => l.type === 'vector');
+    
+    if (vectorLayers.length === 0) {
+      message.warning('没有可用的矢量图层');
+      return;
+    }
+    
+    if (vectorLayers.length === 1) {
+      // 只有一个矢量图层，直接使用
+      const layer = vectorLayers[0];
+      selectLayer(layer);
+      
+      if (action === 'table') {
+        addAttributeTableLayer(layer.id);
+        showWindow('attribute-table', { layerId: layer.id});
+      } else if (action === 'properties') {
+        showWindow('feature-info');
+      } else if (action === 'symbology') {
+        updateWindow('symbology', {
+          title: `符号设置 - ${layer.name}`,
+          metadata: { layerId: layer.id }
+        });
+        showWindow('symbology', { layerId: layer.id });
+      } else if (action === 'label') {
+        updateWindow('label', {
+          title: `标注设置 - ${layer.name}`,
+          metadata: { layerId: layer.id }
+        });
+        showWindow('label', { layerId: layer.id });
+      }
+    } else {
+      // 多个矢量图层，弹窗选择
+      showLayerSelectModal(action);
+    }
+  };
+
+  // 显示图层选择对话框
+  const showLayerSelectModal = (action: 'properties' | 'symbology' | 'table' | 'label') => {
+    const vectorLayers = layers.filter(l => l.type === 'vector');
+    
+    if (vectorLayers.length === 0) {
+      message.warning('没有可用的矢量图层');
+      return;
+    }
+
+    const actionNames = {
+      properties: '查看要素信息',
+      symbology: '设置符号系统',
+      table: '打开属性表',
+      label: '设置标注'
+    };
+
+    Modal.confirm({
+      title: `选择图层 - ${actionNames[action]}`,
+      content: (
+        <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+          <div style={{ marginBottom: 12, color: '#666' }}>请选择要操作的图层：</div>
+          {vectorLayers.map(layer => (
+            <div
+              key={layer.id}
+              style={{
+                padding: '8px 12px',
+                margin: '4px 0',
+                background: '#f5f5f5',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#e6f7ff'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#f5f5f5'}
+              onClick={() => {
+                selectLayer(layer);
+                Modal.destroyAll();
+                setTimeout(() => {
+                  if (action === 'table') {
+                    addAttributeTableLayer(layer.id);
+                    showWindow('attribute-table', { layerId: layer.id });
+                  } else if (action === 'properties') {
+                    showWindow('feature-info');
+                  } else if (action === 'symbology') {
+                    updateWindow('symbology', {
+                      title: `符号设置 - ${layer.name}`,
+                      metadata: { layerId: layer.id }
+                    });
+                    showWindow('symbology', { layerId: layer.id });
+                  } else if (action === 'label') {
+                    updateWindow('label', {
+                      title: `标注设置 - ${layer.name}`,
+                      metadata: { layerId: layer.id }
+                    });
+                    showWindow('label', { layerId: layer.id });
+                  }
+                }, 100);
+              }}
+            >
+              <div style={{ fontWeight: 500 }}>{layer.name}</div>
+              <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
+                ID: {layer.id}
+              </div>
+            </div>
+          ))}
+        </div>
+      ),
+      icon: null,
+      okButtonProps: { style: { display: 'none' } },
+      cancelText: '取消',
+      width: 480,
+    });
   };
 
   const tabs: RibbonTab[] = [
@@ -312,37 +460,26 @@ const RibbonMenu: React.FC = () => {
           label: '数据',
           items: [
             { key: 'add-data', label: '添加数据', icon: <PlusOutlined />, onClick: handleOpenShapefile },
-          ]
-        },
-        {
-          key: 'selection',
-          label: '选择',
-          items: [
-            { key: 'select', label: '选择', icon: <SelectOutlined />, onClick: handleSelect },
-            { key: 'clear', label: '清除', icon: <DeleteOutlined />, onClick: handleClearSelection },
-            { key: 'attributes', label: '属性表', icon: <TableOutlined />, onClick: handleOpenAttributeTable },
-          ]
-        },
-      ]
-    },
-    {
-      key: 'insert',
-      label: '插入',
-      groups: [
-        {
-          key: 'map',
-          label: '地图',
-          items: [
             { key: 'basemap', label: '底图', icon: <GlobalOutlined />, dropdown: basemapMenuItems },
           ]
         },
         {
-          key: 'layer',
-          label: '图层',
+          key: 'navigate',
+          label: '导航',
           items: [
-            { key: 'point', label: '点图层', icon: <EnvironmentOutlined />, onClick: () => handleCreateLayer('point') },
-            { key: 'line', label: '线图层', icon: <LineChartOutlined />, onClick: () => handleCreateLayer('line') },
-            { key: 'polygon', label: '面图层', icon: <HeatMapOutlined />, onClick: () => handleCreateLayer('polygon') },
+            { key: 'navigation', label: '导航', icon: <DragOutlined />, dropdown: navigationMenuItems },
+            { key: 'clear', label: '清除', icon: <DeleteOutlined />, onClick: handleClearSelection },
+          ]
+        },
+        {
+          key: 'windows',
+          label: '窗口',
+          items: [
+            { key: 'attributes', label: '属性表', icon: <TableOutlined />, onClick: () => handleTogglePanel('table') },
+            { key: 'catalog', label: '图层管理', icon: <FolderViewOutlined />, onClick: () => handleTogglePanel('catalog') },
+            { key: 'properties', label: '要素信息', icon: <InfoCircleOutlined />, onClick: () => handleTogglePanel('properties') },
+            { key: 'symbology', label: '符号系统', icon: <BgColorsOutlined />, onClick: () => handleTogglePanel('symbology') },
+            { key: 'label', label: '标注', icon: <FontSizeOutlined />, onClick: () => handleTogglePanel('label') },
           ]
         },
       ]
@@ -371,28 +508,9 @@ const RibbonMenu: React.FC = () => {
       ]
     },
     {
-      key: 'view',
-      label: '视图',
-      groups: [
-        {
-          key: 'navigate',
-          label: '导航',
-          items: [
-            { key: 'zoom-in', label: '放大', icon: <ZoomInOutlined />, onClick: () => handleMapTool('zoomIn') },
-            { key: 'pan', label: '平移', icon: <DragOutlined />, onClick: () => handleMapTool('pan') },
-            { key: 'full-extent', label: '全图', icon: <GlobalOutlined />, onClick: () => handleMapTool('fullExtent') },
-          ]
-        },
-        {
-          key: 'windows',
-          label: '窗口',
-          items: [
-            { key: 'catalog', label: '目录', icon: <FolderOpenOutlined />, onClick: () => handleTogglePanel('catalog') },
-            { key: 'properties', label: '属性', icon: <SettingOutlined />, onClick: () => handleTogglePanel('properties') },
-            { key: 'table', label: '表格', icon: <TableOutlined />, onClick: () => handleTogglePanel('table') },
-          ]
-        },
-      ]
+      key: 'other',
+      label: '其他',
+      groups: []
     },
   ];
 

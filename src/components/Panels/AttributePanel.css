@@ -1,54 +1,32 @@
 .attribute-panel {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    background: white;
-    border-top: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: white;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.attribute-panel .panel-header {
-    padding: 8px 12px;
-    background: #fafafa;
-    border-bottom: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    min-height: 40px;
-    flex-shrink: 0;
+.attribute-panel-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 13px;
+  flex-shrink: 0;
 }
 
-.attribute-panel .header-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1;
+.toolbar-info {
+  color: #6b7280;
+  font-size: 12px;
 }
 
-.attribute-panel .header-title {
-    font-weight: 600;
-    font-size: 13px;
-    color: #333;
-}
-
-.attribute-panel .header-divider {
-    color: #d1d5db;
-    font-size: 12px;
-}
-
-.attribute-panel .header-layer-name {
-    font-size: 13px;
-    color: #1890ff;
-    font-weight: 500;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.attribute-panel .header-count {
-    font-size: 12px;
-    color: #666;
-    font-weight: normal;
+.toolbar-selected {
+  color: #1890ff;
+  font-weight: 500;
+  margin-left: 4px;
 }
 
 .attribute-panel .header-right {
@@ -59,10 +37,12 @@
 
 .attribute-panel-content {
     flex: 1;
-    overflow: hidden;
+    overflow: auto;
     padding: 0 8px 12px 8px;
     position: relative;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .attribute-panel-content.empty {
@@ -73,8 +53,11 @@
 }
 
 .attribute-table {
-    height: 100%;
+    flex: 1;
     width: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .attribute-table .ant-table {
@@ -82,14 +65,31 @@
 }
 
 .attribute-table .ant-table-wrapper {
-    height: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.attribute-table .ant-table {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.attribute-table .ant-table-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 /* 确保表格容器支持横向滚动 */
 .attribute-table .ant-table-body {
     overflow-x: auto !important;
     overflow-y: auto !important;
-    max-height: 100%;
+    flex: 1;
+    min-height: 0;
 }
 
 /* 强制显示滚动条 */

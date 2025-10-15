@@ -1,6 +1,31 @@
 .feature-info-content {
   padding: 12px;
   height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* 滚动条样式 */
+.feature-info-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.feature-info-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.feature-info-content::-webkit-scrollbar-thumb {
+  background: #bbb;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.feature-info-content::-webkit-scrollbar-thumb:hover {
+  background: #999;
 }
 
 .feature-info-title {
@@ -12,6 +37,7 @@
   background: linear-gradient(90deg, #e6f7ff 0%, #f0f5ff 100%);
   border-left: 3px solid #1890ff;
   border-radius: 2px;
+  flex-shrink: 0; /* 防止标题被压缩 */
 }
 
 .feature-properties {

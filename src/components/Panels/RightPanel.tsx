@@ -95,13 +95,6 @@ const RightPanel: React.FC<RightPanelProps> = ({ onClose }) => {
 
   return (
     <div className="right-panel">
-      <div className="panel-header">
-        <span style={{ fontWeight: 600, fontSize: 14 }}>属性面板</span>
-        {onClose && (
-          <button onClick={onClose} className="panel-close-btn">✕</button>
-        )}
-      </div>
-      
       <div className="panel-tabs-container">
         <Tabs 
           activeKey={activeKey}

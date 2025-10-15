@@ -8,7 +8,14 @@
     "type": "git",
     "url": "https://github.com/xiaofuX1/MiniGIS"
   },
-  "keywords": ["GIS", "desktop", "tauri", "react", "gdal", "maplibre"],
+  "keywords": [
+    "GIS",
+    "desktop",
+    "tauri",
+    "react",
+    "gdal",
+    "openlayers"
+  ],
   "author": "MiniGIS Team",
   "license": "MIT",
   "scripts": {
@@ -34,9 +41,10 @@
     "antd": "^5.22.5",
     "dayjs": "^1.11.13",
     "lucide-react": "^0.545.0",
-    "maplibre-gl": "^5.9.0",
     "mobx": "^6.13.5",
     "mobx-react-lite": "^4.0.7",
+    "ol": "^9.2.4",
+    "proj4": "^2.19.10",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-resizable-panels": "^2.1.7",
@@ -47,6 +55,7 @@
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.5",
     "@types/node": "^22.10.1",
+    "@types/proj4": "^2.5.6",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",

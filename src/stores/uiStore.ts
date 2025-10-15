@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 
 type RightPanelType = 'feature' | 'symbology' | 'label' | null;
+type PanelDockPosition = 'left' | 'right' | 'bottom' | 'floating';
+
+interface PanelState {
+  dockPosition: PanelDockPosition;
+  width: number;
+  height: number;
+  floatingPosition?: { x: number; y: number };
+}
 
 interface UiStore {
   leftPanelCollapsed: boolean;
@@ -12,6 +20,12 @@ interface UiStore {
   mapHintText: string;
   isSelectMode: boolean;
   measureMode: 'distance' | 'area' | 'coordinate' | null;
+  
+  // 面板状态
+  leftPanelState: PanelState;
+  rightPanelState: PanelState;
+  bottomPanelState: PanelState;
+  
   setLeftPanelCollapsed: (collapsed: boolean) => void;
   setRightPanelCollapsed: (collapsed: boolean) => void;
   setBottomPanelCollapsed: (collapsed: boolean) => void;
@@ -28,6 +42,11 @@ interface UiStore {
   toggleLeftPanel: () => void;
   toggleRightPanel: () => void;
   toggleBottomPanel: () => void;
+  
+  // 面板位置和状态管理
+  setLeftPanelState: (state: Partial<PanelState>) => void;
+  setRightPanelState: (state: Partial<PanelState>) => void;
+  setBottomPanelState: (state: Partial<PanelState>) => void;
 }
 
 export const useUiStore = create<UiStore>((set) => ({
@@ -40,6 +59,23 @@ export const useUiStore = create<UiStore>((set) => ({
   mapHintText: '平移模式：拖拽地图浏览',
   isSelectMode: false,
   measureMode: null,
+
+  // 初始面板状态
+  leftPanelState: {
+    dockPosition: 'left',
+    width: 300,
+    height: 400,
+  },
+  rightPanelState: {
+    dockPosition: 'right',
+    width: 300,
+    height: 400,
+  },
+  bottomPanelState: {
+    dockPosition: 'bottom',
+    width: 600,
+    height: 300,
+  },
 
   setLeftPanelCollapsed: (collapsed) => set({ leftPanelCollapsed: collapsed }),
   setRightPanelCollapsed: (collapsed) => set({ rightPanelCollapsed: collapsed }),
@@ -76,6 +112,17 @@ export const useUiStore = create<UiStore>((set) => ({
   toggleLeftPanel: () => set((state) => ({ leftPanelCollapsed: !state.leftPanelCollapsed })),
   toggleRightPanel: () => set((state) => ({ rightPanelCollapsed: !state.rightPanelCollapsed })),
   toggleBottomPanel: () => set((state) => ({ bottomPanelCollapsed: !state.bottomPanelCollapsed })),
+
+  // 面板状态管理
+  setLeftPanelState: (state) => set((prev) => ({
+    leftPanelState: { ...prev.leftPanelState, ...state }
+  })),
+  setRightPanelState: (state) => set((prev) => ({
+    rightPanelState: { ...prev.rightPanelState, ...state }
+  })),
+  setBottomPanelState: (state) => set((prev) => ({
+    bottomPanelState: { ...prev.bottomPanelState, ...state }
+  })),
 }));
 
 // 辅助函数：根据状态生成提示文本

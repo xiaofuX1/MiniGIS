@@ -9,7 +9,7 @@
 #### 核心功能
 - ✅ **GDAL完整集成** - 支持Shapefile、GeoJSON、GeoPackage等多种矢量格式
 - ✅ **坐标系统** - 自动坐标转换到WGS84，支持EPSG和投影坐标系
-- ✅ **MapLibre GL引擎** - 替换Leaflet，性能大幅提升，支持硬件加速
+- ✅ **OpenLayers引擎** - 企业级开源地图库，功能强大，性能优异
 - ✅ **MSI安装包** - 企业级Windows安装程序，包含所有运行时依赖
 
 #### 用户界面

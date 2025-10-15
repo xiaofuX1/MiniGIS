@@ -21,7 +21,7 @@
 - **React 18** - UI 框架
 - **TypeScript** - 类型安全
 - **Zustand** - 状态管理
-- **MapLibre GL** - 地图渲染引擎
+- **OpenLayers** - 地图渲染引擎
 - **Ant Design 5** - UI 组件库
 - **TailwindCSS** - 样式方案
 - **@turf/turf** - 空间分析
@@ -455,5 +455,5 @@ describe('LayerStore', () => {
 
 - [Tauri 官方文档](https://tauri.app/)
 - [GDAL 文档](https://gdal.org/)
-- [MapLibre GL 文档](https://maplibre.org/)
+- [OpenLayers 文档](https://openlayers.org/)
 - [Zustand 文档](https://zustand-demo.pmnd.rs/)

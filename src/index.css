@@ -62,7 +62,7 @@
   }
 }
 
-/* Map container base styles remain above; Leaflet overrides removed after migration */
+/* OpenLayers样式已通过ol/ol.css引入 */
 
 /* 自定义滚动条 */
 ::-webkit-scrollbar {
