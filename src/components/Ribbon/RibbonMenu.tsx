@@ -6,7 +6,7 @@ import {
   EnvironmentOutlined, LineChartOutlined,
   GlobalOutlined, FolderOpenOutlined, InfoCircleOutlined,
   FullscreenOutlined, BgColorsOutlined, FolderViewOutlined,
-  EyeOutlined, FontSizeOutlined
+  EyeOutlined, FontSizeOutlined, AimOutlined
 } from '@ant-design/icons';
 import { Tooltip, Dropdown, message, Modal } from 'antd';
 import { invoke } from '@tauri-apps/api/core';
@@ -14,6 +14,8 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { useLayerStore } from '../../stores/layerStore';
 import { useSelectionStore } from '../../stores/selectionStore';
 import { useWindowStore } from '../../stores/windowStore';
+import { useCRSStore } from '../../stores/crsStore';
+import { gdalService } from '../../services/gdalService';
 import './RibbonMenu.css';
 
 interface RibbonTab {
@@ -41,6 +43,7 @@ const RibbonMenu: React.FC = () => {
   const { addLayer, layers, removeLayer, selectedLayer, addAttributeTableLayer, selectLayer } = useLayerStore();
   const { clearSelection, setIsSelecting } = useSelectionStore();
   const { showWindow, toggleWindow, updateWindow } = useWindowStore();
+  const { currentCRS } = useCRSStore();
 
   const handleBasemapChange = (basemapType: string) => {
     // 先检查是否已经是当前底图
@@ -189,12 +192,22 @@ const RibbonMenu: React.FC = () => {
       });
       
       if (selected) {
+        message.loading('正在加载文件...', 0);
+        
         // 使用 GDAL 打开文件
         const info: any = await invoke('gdal_open_vector', { path: selected });
-        message.success(`成功打开文件: ${selected}`);
         
-        // 使用 GDAL 获取 GeoJSON 数据
+        // 获取数据的原始坐标系
+        const sourceCrs = info.projection || 'EPSG:4326';
+        console.log(`[文件加载] 数据坐标系: ${sourceCrs}, 地图坐标系: ${currentCRS.code}`);
+        
+        // 使用 GDAL 获取 GeoJSON 数据（保持原始坐标系）
         const geojson = await invoke('gdal_get_geojson', { path: selected });
+        
+        // 不再手动投影，OpenLayers会根据layer.projection自动投影
+        console.log(`[文件加载] 使用OpenLayers动态投影: ${sourceCrs} -> ${currentCRS.code}`);
+        message.success(`成功打开文件: ${selected}`);
+        message.info(`数据坐标系: ${sourceCrs}，将自动投影到地图坐标系: ${currentCRS.code}`, 2);
         
         // 映射后端的 snake_case 到前端的 camelCase
         const extent = info.extent ? {
@@ -215,11 +228,15 @@ const RibbonMenu: React.FC = () => {
           source: { type: ext === 'shp' ? 'shapefile' : ext as any, path: selected },
           visible: true,
           opacity: 1,
+          projection: sourceCrs,  // 保存图层的源坐标系
           extent: extent,
           geojson: geojson,
         });
+        
+        message.destroy();
       }
     } catch (error) {
+      message.destroy();
       console.error('打开文件详细错误:', error);
       
       // 调用GDAL诊断获取详细信息
@@ -461,6 +478,7 @@ const RibbonMenu: React.FC = () => {
           items: [
             { key: 'add-data', label: '添加数据', icon: <PlusOutlined />, onClick: handleOpenShapefile },
             { key: 'basemap', label: '底图', icon: <GlobalOutlined />, dropdown: basemapMenuItems },
+            { key: 'crs', label: '坐标系', icon: <AimOutlined />, onClick: () => showWindow('crs-settings') },
           ]
         },
         {
@@ -517,46 +535,48 @@ const RibbonMenu: React.FC = () => {
   const currentTabGroups = tabs.find(tab => tab.key === activeTab)?.groups || [];
 
   return (
-    <div className="ribbon-container">
-      <div className="ribbon-tabs">
-        {tabs.map(tab => (
-          <div
-            key={tab.key}
-            className={`ribbon-tab ${activeTab === tab.key ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.key)}
-          >
-            {tab.label}
-          </div>
-        ))}
-      </div>
-      
-      <div className="ribbon-content">
-        {currentTabGroups.map(group => (
-          <div key={group.key} className="ribbon-group">
-            <div className="ribbon-group-items">
-              {group.items.map(item => (
-                <Tooltip key={item.key} title={item.label}>
-                  {item.dropdown ? (
-                    <Dropdown menu={{ items: item.dropdown }}>
+    <>
+      <div className="ribbon-container">
+        <div className="ribbon-tabs">
+          {tabs.map(tab => (
+            <div
+              key={tab.key}
+              className={`ribbon-tab ${activeTab === tab.key ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              {tab.label}
+            </div>
+          ))}
+        </div>
+        
+        <div className="ribbon-content">
+          {currentTabGroups.map(group => (
+            <div key={group.key} className="ribbon-group">
+              <div className="ribbon-group-items">
+                {group.items.map(item => (
+                  <Tooltip key={item.key} title={item.label}>
+                    {item.dropdown ? (
+                      <Dropdown menu={{ items: item.dropdown }}>
+                        <div className="ribbon-item" onClick={item.onClick}>
+                          <div className="ribbon-item-icon">{item.icon}</div>
+                          <div className="ribbon-item-label">{item.label}</div>
+                        </div>
+                      </Dropdown>
+                    ) : (
                       <div className="ribbon-item" onClick={item.onClick}>
                         <div className="ribbon-item-icon">{item.icon}</div>
                         <div className="ribbon-item-label">{item.label}</div>
                       </div>
-                    </Dropdown>
-                  ) : (
-                    <div className="ribbon-item" onClick={item.onClick}>
-                      <div className="ribbon-item-icon">{item.icon}</div>
-                      <div className="ribbon-item-label">{item.label}</div>
-                    </div>
-                  )}
-                </Tooltip>
-              ))}
+                    )}
+                  </Tooltip>
+                ))}
+              </div>
+              <div className="ribbon-group-label">{group.label}</div>
             </div>
-            <div className="ribbon-group-label">{group.label}</div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

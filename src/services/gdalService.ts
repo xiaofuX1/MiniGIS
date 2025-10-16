@@ -82,6 +82,26 @@ class GDALService {
   }
 
   /**
+   * 获取投影后的GeoJSON
+   * @param path 文件路径
+   * @param targetCrs 目标坐标系（EPSG代码或WKT）
+   */
+  async getGeoJSONWithProjection(path: string, targetCrs: string): Promise<any> {
+    try {
+      const geojson = await invoke('gdal_get_geojson_projected', { 
+        path, 
+        targetCrs 
+      });
+      return geojson;
+    } catch (error) {
+      console.error('[GDAL] 读取投影GeoJSON失败:', error);
+      // 如果后端不支持投影，回退到普通GeoJSON
+      console.warn('[GDAL] 回退到普通GeoJSON读取');
+      return this.getGeoJSON(path);
+    }
+  }
+
+  /**
    * 坐标转换
    * @param fromSrs 源坐标系 (EPSG代码、WKT或PROJ.4)
    * @param toSrs 目标坐标系 (EPSG代码、WKT或PROJ.4)
@@ -142,6 +162,34 @@ class GDALService {
    */
   async webMercatorToWgs84(coordinates: Array<[number, number]>): Promise<Array<[number, number]>> {
     return this.transformCoordinates('EPSG:3857', 'EPSG:4326', coordinates);
+  }
+
+  /**
+   * 投影GeoJSON到指定坐标系
+   * @param geojson GeoJSON对象
+   * @param fromCrs 源坐标系
+   * @param toCrs 目标坐标系
+   */
+  async projectGeoJSON(geojson: any, fromCrs: string, toCrs: string): Promise<any> {
+    try {
+      // 如果源和目标坐标系相同，直接返回
+      if (fromCrs === toCrs) {
+        return geojson;
+      }
+
+      const projected = await invoke('gdal_project_geojson', {
+        geojson: JSON.stringify(geojson),
+        fromCrs,
+        toCrs
+      });
+      
+      return projected;
+    } catch (error) {
+      console.error('[GDAL] GeoJSON投影失败:', error);
+      // 投影失败时返回原始GeoJSON
+      console.warn('[GDAL] 投影失败，返回原始GeoJSON');
+      return geojson;
+    }
   }
 
   /**

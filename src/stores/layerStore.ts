@@ -4,6 +4,8 @@ import type { Symbolizer } from '../types';
 import { saveProjectState } from '../services/storageService';
 import { useMapStore } from './mapStore';
 import { useProjectStore } from './projectStore';
+import type { CRSInfo } from './crsStore';
+import type { UiStore } from './uiStore';
 
 export interface LabelConfig {
   enabled: boolean;          // 是否启用标注
@@ -28,6 +30,7 @@ export interface Layer {
   };
   visible: boolean;
   opacity: number;
+  projection?: string;  // 图层的源坐标系（从后端获取）
   style?: {
     fillColor?: string;
     strokeColor?: string;
@@ -67,7 +70,7 @@ interface LayerStore {
 // 默认底图 - 星图地球影像
 const geovisToken = '488fb6d94c9f290d58a855e648fe70d7f02db5ef9e496a07165ecfe3d2ccc4da';
 
-const defaultBasemapAnnotation: Layer = {
+export const defaultBasemapAnnotation: Layer = {
   id: 'basemap-geovis-image-anno',
   name: '星图地球影像注记',
   type: 'basemap',
@@ -79,7 +82,7 @@ const defaultBasemapAnnotation: Layer = {
   opacity: 1,
 };
 
-const defaultBasemap: Layer = {
+export const defaultBasemap: Layer = {
   id: 'basemap-geovis-image',
   name: '星图地球影像',
   type: 'basemap',
@@ -91,8 +94,21 @@ const defaultBasemap: Layer = {
   opacity: 1,
 };
 
+// 检查是否有保存的会话
+const hasSavedSession = () => {
+  try {
+    const saved = localStorage.getItem('minigis_last_session');
+    return saved !== null;
+  } catch {
+    return false;
+  }
+};
+
+// 初始图层：如果有保存的会话则为空，否则使用默认底图
+const initialLayers = hasSavedSession() ? [] : [defaultBasemapAnnotation, defaultBasemap];
+
 export const useLayerStore = create<LayerStore>((set, get) => ({
-  layers: [defaultBasemapAnnotation, defaultBasemap],  // 初始化时包含默认底图和注记层
+  layers: initialLayers,
   selectedLayer: null,
   attributeTableLayerIds: [],
   activeAttributeTableLayerId: null,
@@ -249,9 +265,34 @@ export const useLayerStore = create<LayerStore>((set, get) => ({
   },
   
   saveAllState: () => {
-    const layers = get().layers.filter(l => l.type !== 'basemap');
+    const allLayers = get().layers;
+    const dataLayers = allLayers.filter(l => l.type !== 'basemap');
+    const basemapLayers = allLayers.filter(l => l.type === 'basemap');
     const mapState = useMapStore.getState();
     const projectState = useProjectStore.getState();
+    
+    // 延迟导入 store，避免初始化时的循环依赖
+    let crsState: { currentCRS: CRSInfo } | null = null;
+    let uiState: Partial<UiStore> | null = null;
+    
+    try {
+      // 使用动态import，在运行时加载
+      const crsModule = (window as any).__CRS_STORE__;
+      if (crsModule) {
+        crsState = crsModule.getState();
+      }
+    } catch (e) {
+      // 静默失败，CRS状态不是必需的
+    }
+    
+    try {
+      const uiModule = (window as any).__UI_STORE__;
+      if (uiModule) {
+        uiState = uiModule.getState();
+      }
+    } catch (e) {
+      // 静默失败，UI状态不是必需的
+    }
     
     const state = {
       name: projectState.currentProject?.name || '未命名项目',
@@ -259,8 +300,9 @@ export const useLayerStore = create<LayerStore>((set, get) => ({
       mapState: {
         center: mapState.center,
         zoom: mapState.zoom,
+        rotation: 0,  // TODO: 如果支持地图旋转，从 mapStore 获取
       },
-      layers: layers.map(l => ({
+      layers: dataLayers.map(l => ({
         id: l.id,
         name: l.name,
         type: l.type,
@@ -273,6 +315,39 @@ export const useLayerStore = create<LayerStore>((set, get) => ({
         labelConfig: l.labelConfig,
         extent: l.extent,
       })),
+      // 坐标系信息
+      crs: crsState ? {
+        code: crsState.currentCRS.code,
+        name: crsState.currentCRS.name,
+        type: crsState.currentCRS.type,
+        wkt: crsState.currentCRS.wkt,
+      } : undefined,
+      // 底图配置
+      basemaps: basemapLayers.map(l => ({
+        id: l.id,
+        name: l.name,
+        url: l.source.url || '',
+        visible: l.visible,
+        opacity: l.opacity,
+      })),
+      // UI布局状态
+      uiState: (uiState && 
+                uiState.leftPanelState && 
+                uiState.rightPanelState && 
+                uiState.bottomPanelState) ? {
+        leftPanelCollapsed: uiState.leftPanelCollapsed ?? false,
+        rightPanelCollapsed: uiState.rightPanelCollapsed ?? false,
+        bottomPanelCollapsed: uiState.bottomPanelCollapsed ?? true,
+        rightPanelType: uiState.rightPanelType ?? 'feature',
+        leftPanelState: uiState.leftPanelState,
+        rightPanelState: uiState.rightPanelState,
+        bottomPanelState: uiState.bottomPanelState,
+      } : undefined,
+      // 属性表状态
+      attributeTableState: {
+        openLayerIds: get().attributeTableLayerIds,
+        activeLayerId: get().activeAttributeTableLayerId,
+      },
     };
     
     saveProjectState(state);

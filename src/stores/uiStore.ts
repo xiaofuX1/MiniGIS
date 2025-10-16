@@ -10,7 +10,7 @@ interface PanelState {
   floatingPosition?: { x: number; y: number };
 }
 
-interface UiStore {
+export interface UiStore {
   leftPanelCollapsed: boolean;
   rightPanelCollapsed: boolean;
   bottomPanelCollapsed: boolean;
@@ -124,6 +124,28 @@ export const useUiStore = create<UiStore>((set) => ({
     bottomPanelState: { ...prev.bottomPanelState, ...state }
   })),
 }));
+
+// 注册到全局对象供其他模块访问
+if (typeof window !== 'undefined') {
+  (window as any).__UI_STORE__ = useUiStore;
+}
+
+// 自动保存：监听UI状态变化
+if (typeof window !== 'undefined') {
+  let saveTimer: NodeJS.Timeout;
+  useUiStore.subscribe((state) => {
+    // 延迟保存，避免频繁写入
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      try {
+        const { useLayerStore } = require('./layerStore');
+        useLayerStore.getState().saveAllState();
+      } catch (e) {
+        // 静默失败
+      }
+    }, 1000);
+  });
+}
 
 // 辅助函数：根据状态生成提示文本
 export const getMapHintText = (isSelectMode: boolean, measureMode: 'distance' | 'area' | 'coordinate' | null): string => {

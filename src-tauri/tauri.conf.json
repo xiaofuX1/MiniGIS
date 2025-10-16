@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schema.json",
   "productName": "MiniGIS",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "identifier": "com.xiaofu.minigis",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -36,13 +36,12 @@
         "center": true,
         "resizable": true,
         "maximized": false,
-        "decorations": true,
+        "decorations": false,
         "transparent": false,
         "alwaysOnTop": false,
         "skipTaskbar": false,
         "visible": false,
-        "backgroundColor": "#ffffff",
-        "titleBarStyle": "Visible"
+        "backgroundColor": "#ffffff"
       }
     ],
     "security": {

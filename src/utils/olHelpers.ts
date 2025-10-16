@@ -1,24 +1,27 @@
-import { fromLonLat, toLonLat } from 'ol/proj';
 import type { Coordinate } from 'ol/coordinate';
 import type { Extent } from 'ol/extent';
 
 /**
  * OpenLayers辅助工具函数
+ * 使用EPSG:4326（地理坐标系）作为基础，像专业GIS软件一样无限制
  */
 
 /**
- * 将[lat, lng]转换为OpenLayers的[lng, lat]投影坐标
+ * 将[lat, lng]转换为OpenLayers坐标
+ * 使用EPSG:4326地理坐标系，无纬度限制
  */
 export const latLngToOL = (latLng: [number, number]): Coordinate => {
-  return fromLonLat([latLng[1], latLng[0]]);
+  // 直接返回[lng, lat]，使用EPSG:4326，无需投影转换
+  return [latLng[1], latLng[0]];
 };
 
 /**
- * 将OpenLayers投影坐标转换为[lat, lng]
+ * 将OpenLayers坐标转换为[lat, lng]
+ * 使用EPSG:4326地理坐标系，直接转换，完全无限制
  */
 export const olToLatLng = (coordinate: Coordinate): [number, number] => {
-  const lonLat = toLonLat(coordinate);
-  return [lonLat[1], lonLat[0]];
+  // 直接返回[lat, lng]，完全无限制，支持任意数值
+  return [coordinate[1], coordinate[0]];
 };
 
 /**
@@ -31,22 +34,22 @@ export const geoJsonExtentToOL = (extent: {
   maxX: number;
   maxY: number;
 }): Extent => {
-  const bottomLeft = fromLonLat([extent.minX, extent.minY]);
-  const topRight = fromLonLat([extent.maxX, extent.maxY]);
-  return [bottomLeft[0], bottomLeft[1], topRight[0], topRight[1]];
+  // 使用EPSG:4326，直接返回原始值，完全无限制
+  // 格式：[minX, minY, maxX, maxY]
+  return [extent.minX, extent.minY, extent.maxX, extent.maxY];
 };
 
 /**
  * 将OpenLayers extent转换为GeoJSON extent
+ * 使用EPSG:4326，直接转换，完全无限制
  */
 export const olExtentToGeoJson = (extent: Extent) => {
-  const bottomLeft = toLonLat([extent[0], extent[1]]);
-  const topRight = toLonLat([extent[2], extent[3]]);
+  // 直接返回原始值，支持任意范围的坐标
   return {
-    minX: bottomLeft[0],
-    minY: bottomLeft[1],
-    maxX: topRight[0],
-    maxY: topRight[1],
+    minX: extent[0],
+    minY: extent[1],
+    maxX: extent[2],
+    maxY: extent[3],
   };
 };
 

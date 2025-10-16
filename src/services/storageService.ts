@@ -17,6 +17,7 @@ export interface ProjectState {
   mapState: {
     center: [number, number];
     zoom: number;
+    rotation?: number;  // 地图旋转角度
   };
   layers: Array<{
     id: string;
@@ -42,6 +43,51 @@ export interface ProjectState {
       maxY: number;
     };
   }>;
+  // 坐标系信息
+  crs?: {
+    code: string;
+    name: string;
+    type: string;
+    wkt: string;
+  };
+  // 底图配置
+  basemaps?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    visible: boolean;
+    opacity: number;
+  }>;
+  // UI布局状态
+  uiState?: {
+    leftPanelCollapsed: boolean;
+    rightPanelCollapsed: boolean;
+    bottomPanelCollapsed: boolean;
+    rightPanelType: 'feature' | 'symbology' | 'label' | null;
+    leftPanelState: {
+      dockPosition: 'left' | 'right' | 'bottom' | 'floating';
+      width: number;
+      height: number;
+      floatingPosition?: { x: number; y: number };
+    };
+    rightPanelState: {
+      dockPosition: 'left' | 'right' | 'bottom' | 'floating';
+      width: number;
+      height: number;
+      floatingPosition?: { x: number; y: number };
+    };
+    bottomPanelState: {
+      dockPosition: 'left' | 'right' | 'bottom' | 'floating';
+      width: number;
+      height: number;
+      floatingPosition?: { x: number; y: number };
+    };
+  };
+  // 属性表状态
+  attributeTableState?: {
+    openLayerIds: string[];
+    activeLayerId: string | null;
+  };
 }
 
 /**

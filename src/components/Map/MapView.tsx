@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Map from "ol/Map";
 import View from "ol/View";
 import { defaults as defaultControls } from "ol/control";
-import { defaults as defaultInteractions, DragRotate, PinchRotate } from "ol/interaction";
+import { defaults as defaultInteractions, DragRotate, PinchRotate, DragPan } from "ol/interaction";
 import TileLayer from "ol/layer/Tile";
 import VectorLayer from "ol/layer/Vector";
 import { XYZ, Vector as VectorSource } from "ol/source";
@@ -19,6 +19,8 @@ import { useMapStore } from "../../stores/mapStore";
 import { useLayerStore } from "../../stores/layerStore";
 import { useSelectionStore } from "../../stores/selectionStore";
 import { useWindowStore } from "../../stores/windowStore";
+import { useCRSStore } from "../../stores/crsStore";
+import { registerAllProjections } from "../../utils/projectionRegistry";
 import type { Layer } from "../../stores/layerStore";
 import { symbolizerToOLStyle, createTextStyle } from "../../utils/symbolRenderer";
 import { latLngToOL, olToLatLng, geoJsonExtentToOL, createXYZUrl } from "../../utils/olHelpers";
@@ -57,6 +59,7 @@ const MapView: React.FC = () => {
   
   const { center, zoom, setCenter, setZoom } = useMapStore();
   const { layers, selectLayer } = useLayerStore();
+  const { currentCRS } = useCRSStore();
   const layersRef = useRef(layers);
   const {
     setSelectedFeatures,
@@ -71,18 +74,21 @@ const MapView: React.FC = () => {
   // 设置高亮数据
   const setHighlightData = (feature: any | null) => {
     const source = highlightSourceRef.current;
-    if (!source) return;
+    const map = mapInstance.current;
+    if (!source || !map) return;
     
     if (feature) {
       try {
         const format = new GeoJSON();
+        const featureProjection = map.getView().getProjection().getCode();
+        
         const olFeature = format.readFeature({
           type: "Feature",
           geometry: feature.geometry,
           properties: feature.properties || {},
         }, {
           dataProjection: 'EPSG:4326',
-          featureProjection: 'EPSG:3857',
+          featureProjection: featureProjection,
         });
         source.clear();
         source.addFeature(olFeature);
@@ -208,18 +214,27 @@ const MapView: React.FC = () => {
         if (layers.length > 0) {
           const vectorLayers = layers.filter((l) => l.type !== "basemap" && l.extent);
           if (vectorLayers.length > 0) {
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            vectorLayers.forEach((layer) => {
-              if (layer.extent) {
-                minX = Math.min(minX, layer.extent.minX);
-                minY = Math.min(minY, layer.extent.minY);
-                maxX = Math.max(maxX, layer.extent.maxX);
-                maxY = Math.max(maxY, layer.extent.maxY);
-              }
-            });
-            const extent = geoJsonExtentToOL({ minX, minY, maxX, maxY });
-            isInternalUpdate.current = true;
-            view.fit(extent, { padding: [50, 50, 50, 50], duration: 500 });
+            try {
+              let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+              vectorLayers.forEach((layer) => {
+                if (layer.extent) {
+                  minX = Math.min(minX, layer.extent.minX);
+                  minY = Math.min(minY, layer.extent.minY);
+                  maxX = Math.max(maxX, layer.extent.maxX);
+                  maxY = Math.max(maxY, layer.extent.maxY);
+                }
+              });
+              const extent = geoJsonExtentToOL({ minX, minY, maxX, maxY });
+              isInternalUpdate.current = true;
+              view.fit(extent, { 
+                padding: [50, 50, 50, 50], 
+                duration: 500,
+                maxZoom: 20, // 限制最大缩放级别
+              });
+              console.log('成功缩放到全图范围');
+            } catch (error) {
+              console.error('缩放到全图范围失败:', error);
+            }
           }
         }
         break;
@@ -321,6 +336,8 @@ const MapView: React.FC = () => {
       return;
     }
 
+    const featureProjection = map.getView().getProjection().getCode();
+    
     if (measureModeRef.current === 'coordinate') {
       // 坐标测量：显示所有点和坐标标签
       points.forEach((pt) => {
@@ -331,7 +348,7 @@ const MapView: React.FC = () => {
           properties: {}
         }, {
           dataProjection: 'EPSG:4326',
-          featureProjection: 'EPSG:3857'
+          featureProjection: featureProjection
         });
         currentFeatures.push(pointFeature as Feature<Geometry>);
 
@@ -361,7 +378,7 @@ const MapView: React.FC = () => {
           properties: {}
         }, {
           dataProjection: 'EPSG:4326',
-          featureProjection: 'EPSG:3857'
+          featureProjection: featureProjection
         });
         currentFeatures.push(pointFeature as Feature<Geometry>);
       });
@@ -373,7 +390,7 @@ const MapView: React.FC = () => {
           properties: {}
         }, {
           dataProjection: 'EPSG:4326',
-          featureProjection: 'EPSG:3857'
+          featureProjection: featureProjection
         });
         currentFeatures.push(lineFeature as Feature<Geometry>);
 
@@ -414,7 +431,7 @@ const MapView: React.FC = () => {
           properties: {}
         }, {
           dataProjection: 'EPSG:4326',
-          featureProjection: 'EPSG:3857'
+          featureProjection: featureProjection
         });
         currentFeatures.push(pointFeature as Feature<Geometry>);
       });
@@ -426,7 +443,7 @@ const MapView: React.FC = () => {
           properties: {}
         }, {
           dataProjection: 'EPSG:4326',
-          featureProjection: 'EPSG:3857'
+          featureProjection: featureProjection
         });
         currentFeatures.push(lineFeature as Feature<Geometry>);
       }
@@ -439,7 +456,7 @@ const MapView: React.FC = () => {
           properties: {}
         }, {
           dataProjection: 'EPSG:4326',
-          featureProjection: 'EPSG:3857'
+          featureProjection: featureProjection
         });
         currentFeatures.push(polygonFeature as Feature<Geometry>);
 
@@ -484,17 +501,27 @@ const MapView: React.FC = () => {
   useEffect(() => {
     if (!mapContainer.current || mapInstance.current) return;
 
-    // 创建OpenLayers地图
+    // 注册所有投影坐标系（首次初始化）
+    registerAllProjections();
+
+    // 创建OpenLayers地图 - 暂时固定使用地理坐标系
+    // 投影坐标系功能待完善
+    const mapProjection = currentCRS.type === 'geographic' ? currentCRS.code : 'EPSG:4326';
+    console.log(`[地图初始化] 地图投影: ${mapProjection}, 当前CRS: ${currentCRS.code}`);
+    
     const initialView = new View({
       center: latLngToOL(center),
       zoom: zoom,
+      projection: mapProjection, // 仅使用地理坐标系作为地图投影
       constrainRotation: false, // 禁用旋转
       enableRotation: false,
-      // 性能优化：限制缩放范围
-      minZoom: 2,
-      maxZoom: 20,
       smoothResolutionConstraint: false, // 禁用平滑约束，提升性能
       smoothExtentConstraint: false, // 禁用范围平滑
+      multiWorld: currentCRS.type === 'geographic', // 地理坐标系允许跨世界
+      minZoom: 0, // 最小缩放级别
+      maxZoom: 28, // 最大缩放级别
+      constrainOnlyCenter: false, // 不约束中心点
+      showFullExtent: false, // 不显示完整范围限制
     });
 
     // 移除旋转交互 - 性能优化配置
@@ -505,8 +532,14 @@ const MapView: React.FC = () => {
       doubleClickZoom: true,
       keyboard: false, // 禁用键盘导航，减少事件监听
       mouseWheelZoom: true,
-      dragPan: true,
+      dragPan: false, // 禁用默认的dragPan，使用自定义配置
     });
+    
+    // 添加无限制的平移交互
+    const dragPan = new DragPan({
+      condition: () => true, // 始终允许平移
+    });
+    interactions.push(dragPan);
 
     const map = new Map({
       target: mapContainer.current,
@@ -515,6 +548,7 @@ const MapView: React.FC = () => {
       interactions: interactions,
       // 性能优化配置
       pixelRatio: 1, // 固定像素比，避免高分屏性能损耗
+      moveTolerance: 2, // 增加移动容差，减少重绘
     });
 
     mapInstance.current = map;
@@ -670,11 +704,14 @@ const MapView: React.FC = () => {
         
         if (!targetLayer) return;
         
-        // 转换为GeoJSON格式
+        // 转换为GeoJSON格式 - 自动投影回数据坐标系
         const format = new GeoJSON();
+        const dataProjection = (targetLayer as Layer).projection || 'EPSG:4326';
+        const featureProjection = map.getView().getProjection().getCode();
+        
         const geojsonFeature = format.writeFeatureObject(feature as Feature<Geometry>, {
-          dataProjection: 'EPSG:4326',
-          featureProjection: 'EPSG:3857',
+          dataProjection: dataProjection,
+          featureProjection: featureProjection,
         });
         
         const idx = feature.get('_index');
@@ -689,8 +726,17 @@ const MapView: React.FC = () => {
       });
     });
 
-    // 鼠标移动：改变光标
+    // 鼠标移动：改变光标和更新坐标
     map.on('pointermove', (e: MapBrowserEvent<any>) => {
+      // 获取鼠标位置的经纬度坐标
+      const coord = e.coordinate;
+      const latLng = olToLatLng(coord);
+      
+      // 触发坐标更新事件（发送给StatusBar）
+      window.dispatchEvent(new CustomEvent('mapMouseMove', {
+        detail: [latLng[0], latLng[1]] // [纬度, 经度]
+      }));
+      
       if (measureModeRef.current) {
         map.getTargetElement().style.cursor = 'crosshair';
         return;
@@ -708,14 +754,22 @@ const MapView: React.FC = () => {
     // 监听事件
     const handleZoomToFeature = (event: any) => {
       if (event.detail?.bounds) {
-        const b = event.detail.bounds;
-        if (Array.isArray(b) && b.length === 4) {
-          const extent = geoJsonExtentToOL({ minX: b[0], minY: b[1], maxX: b[2], maxY: b[3] });
-          isInternalUpdate.current = true;
-          map.getView().fit(extent, { padding: [50, 50, 50, 50], duration: 500 });
-        }
-        if (event.detail?.feature) {
-          setHighlightData(event.detail.feature);
+        try {
+          const b = event.detail.bounds;
+          if (Array.isArray(b) && b.length === 4) {
+            const extent = geoJsonExtentToOL({ minX: b[0], minY: b[1], maxX: b[2], maxY: b[3] });
+            isInternalUpdate.current = true;
+            map.getView().fit(extent, { 
+              padding: [50, 50, 50, 50], 
+              duration: 500,
+              maxZoom: 20, // 限制最大缩放级别
+            });
+          }
+          if (event.detail?.feature) {
+            setHighlightData(event.detail.feature);
+          }
+        } catch (error) {
+          console.error('缩放到要素失败:', error);
         }
       }
     };
@@ -737,10 +791,20 @@ const MapView: React.FC = () => {
 
     const handleZoomToLayer = (event: any) => {
       if (event.detail?.extent) {
-        const { minX, minY, maxX, maxY } = event.detail.extent;
-        const extent = geoJsonExtentToOL({ minX, minY, maxX, maxY });
-        isInternalUpdate.current = true;
-        map.getView().fit(extent, { padding: [50, 50, 50, 50], duration: 500 });
+        try {
+          const { minX, minY, maxX, maxY } = event.detail.extent;
+          const extent = geoJsonExtentToOL({ minX, minY, maxX, maxY });
+          isInternalUpdate.current = true;
+          // 使用fit方法缩放到图层范围，确保无论当前位置在哪都能回到图层
+          map.getView().fit(extent, { 
+            padding: [50, 50, 50, 50], 
+            duration: 500,
+            maxZoom: 20, // 限制最大缩放级别，避免过度放大
+          });
+          console.log('成功缩放到图层:', event.detail.extent);
+        } catch (error) {
+          console.error('缩放到图层失败:', error);
+        }
       }
     };
 
@@ -807,7 +871,9 @@ const MapView: React.FC = () => {
           const tileLayer = new TileLayer({
             source: new XYZ({ 
               url,
+              projection: 'EPSG:3857', // Web瓦片使用EPSG:3857，OpenLayers会自动重投影到EPSG:4326
               transition: 0, // 禁用瓦片淡入动画，提升性能
+              wrapX: true, // 允许X轴包裹，支持跨180度经线
             }),
             opacity: layer.opacity,
             visible: layer.visible,
@@ -818,13 +884,19 @@ const MapView: React.FC = () => {
           map.addLayer(tileLayer);
           layerRefs.current.set(layer.id, tileLayer);
         } else if (layer.geojson) {
-          // 矢量图层
+          // 矢量图层 - 自动投影转换
           const format = new GeoJSON();
           const data = prepareGeojsonWithIndex(layer.geojson);
           
+          // 使用图层的projection作为data坐标系，地图的projection作为feature坐标系
+          const dataProjection = layer.projection || 'EPSG:4326';
+          const featureProjection = map.getView().getProjection().getCode();
+          
+          console.log(`[图层加载] ${layer.name}: ${dataProjection} -> ${featureProjection}`);
+          
           const features = format.readFeatures(data, {
-            dataProjection: 'EPSG:4326',
-            featureProjection: 'EPSG:3857',
+            dataProjection: dataProjection,
+            featureProjection: featureProjection,
           });
           
           const source = new VectorSource({ 
@@ -832,22 +904,44 @@ const MapView: React.FC = () => {
             wrapX: false, // 禁用X轴包裹，提升性能
           });
           
-          // 创建样式 - 使用缓存优化
+          // 创建样式 - 优化性能
           const baseStyle = symbolizerToOLStyle(layer.style?.symbolizer, layer.opacity);
           
-          // 样式缓存：如果没有标注，直接使用静态样式
+          // 如果没有标注配置
           if (!layer.labelConfig || !layer.labelConfig.enabled) {
-            // 无标注 - 使用静态样式（性能最优）
+            // 检查baseStyle是否是函数（没有符号配置时是函数）
+            let finalStyle: any;
+            if (typeof baseStyle === 'function') {
+              // 如果是函数，需要创建样式函数但只调用一次来缓存
+              // 为了性能，创建一个缓存样式的函数
+              const styleCache = new globalThis.Map<string, Style[]>();
+              finalStyle = (feature: any) => {
+                const geomType = feature.getGeometry()?.getType() || '';
+                let cached = styleCache.get(geomType);
+                if (!cached) {
+                  const result = baseStyle(feature, 1); // 调用baseStyle生成样式
+                  cached = Array.isArray(result) ? result : (result ? [result] : []);
+                  if (cached.length > 0) {
+                    styleCache.set(geomType, cached);
+                  }
+                }
+                return cached;
+              };
+            } else {
+              // 如果已经是静态样式，直接使用（性能最优）
+              finalStyle = baseStyle;
+            }
+            
             const vectorLayer = new VectorLayer({
               source,
-              style: baseStyle,
+              style: finalStyle,
               opacity: layer.opacity,
               visible: layer.visible,
               zIndex: layers.length - index + 100,
-              updateWhileAnimating: true,
-              updateWhileInteracting: true,
+              updateWhileAnimating: false, // 动画时不更新，提升性能
+              updateWhileInteracting: false, // 交互时不更新，提升性能
               declutter: false, // 无标注时禁用
-              renderBuffer: 100,
+              renderBuffer: 50, // 减少渲染缓冲区，提升性能
             });
             
             map.addLayer(vectorLayer);
@@ -860,7 +954,7 @@ const MapView: React.FC = () => {
           // 有标注 - 使用样式缓存
           const styleCache = new globalThis.Map<string, Style[]>();
           
-          const styleFunction = (feature: any) => {
+          const styleFunction = (feature: any, resolution: number) => {
             const fieldValue = feature.get(layer.labelConfig!.field);
             const cacheKey = String(fieldValue ?? '');
             
@@ -870,8 +964,16 @@ const MapView: React.FC = () => {
               return cachedStyle;
             }
             
-            // 创建新样式
-            const styles: Style[] = [baseStyle as Style];
+            // 创建新样式 - baseStyle可能是函数或Style对象
+            let styles: Style[];
+            if (typeof baseStyle === 'function') {
+              // 如果是样式函数，调用它获取样式数组
+              const result = baseStyle(feature, resolution);
+              styles = Array.isArray(result) ? result : (result ? [result] : []);
+            } else {
+              // 如果是Style对象，直接使用
+              styles = [baseStyle as Style];
+            }
             
             if (fieldValue !== undefined && fieldValue !== null) {
               const textStyle = new Style({
@@ -904,9 +1006,10 @@ const MapView: React.FC = () => {
             visible: layer.visible,
             zIndex: layers.length - index + 100, // 矢量图层在瓦片图层之上
             // 性能优化配置
-            updateWhileAnimating: true, // 动画时更新（缩放流畅）
-            updateWhileInteracting: true, // 交互时更新（平移流畅）
-            declutter: true, // 避免标注重叠，优化渲染
+            updateWhileAnimating: false, // 动画时不更新，提升性能
+            updateWhileInteracting: false, // 交互时不更新，提升性能
+            declutter: true, // 避免标注重叠
+            renderBuffer: 50, // 减小渲染缓冲区
           });
           
           map.addLayer(vectorLayer);
@@ -924,9 +1027,16 @@ const MapView: React.FC = () => {
           // 更新样式
           const baseStyle = symbolizerToOLStyle(layer.style?.symbolizer, layer.opacity);
           
-          const styleFunction = (feature: any) => {
-            const styles: Style[] = [];
-            styles.push(baseStyle as Style);
+          const styleFunction = (feature: any, resolution: number) => {
+            let styles: Style[] = [];
+            
+            // baseStyle可能是函数或Style对象
+            if (typeof baseStyle === 'function') {
+              const result = baseStyle(feature, resolution);
+              styles = Array.isArray(result) ? result : (result ? [result] : []);
+            } else {
+              styles = [baseStyle as Style];
+            }
             
             if (layer.labelConfig && layer.labelConfig.enabled && layer.labelConfig.field) {
               const fieldValue = feature.get(layer.labelConfig.field);
@@ -958,13 +1068,17 @@ const MapView: React.FC = () => {
           olLayer.setVisible(layer.visible);
           olLayer.setZIndex(layers.length - index + 100);
           
-          // 更新数据
+          // 更新数据 - 自动投影转换
           if (layer.geojson && layer.geojson !== cachedGeojson) {
             const format = new GeoJSON();
             const data = prepareGeojsonWithIndex(layer.geojson);
+            
+            const dataProjection = layer.projection || 'EPSG:4326';
+            const featureProjection = map.getView().getProjection().getCode();
+            
             const features = format.readFeatures(data, {
-              dataProjection: 'EPSG:4326',
-              featureProjection: 'EPSG:3857',
+              dataProjection: dataProjection,
+              featureProjection: featureProjection,
             });
             const source = olLayer.getSource();
             if (source) {
@@ -980,10 +1094,18 @@ const MapView: React.FC = () => {
     // 自动缩放到新添加的图层
     newlyAddedLayers.forEach((layer) => {
       if (layer.type !== "basemap" && layer.extent) {
-        const { minX, minY, maxX, maxY } = layer.extent;
-        const extent = geoJsonExtentToOL({ minX, minY, maxX, maxY });
-        isInternalUpdate.current = true;
-        map.getView().fit(extent, { padding: [50, 50, 50, 50], duration: 500 });
+        try {
+          const { minX, minY, maxX, maxY } = layer.extent;
+          const extent = geoJsonExtentToOL({ minX, minY, maxX, maxY });
+          isInternalUpdate.current = true;
+          map.getView().fit(extent, { 
+            padding: [50, 50, 50, 50], 
+            duration: 500,
+            maxZoom: 20, // 限制最大缩放级别
+          });
+        } catch (error) {
+          console.error('自动缩放到新添加图层失败:', error);
+        }
       }
     });
 
@@ -1004,6 +1126,57 @@ const MapView: React.FC = () => {
   useEffect(() => {
     layersRef.current = layers;
   }, [layers]);
+
+  // 监听坐标系变化 - 仅支持地理坐标系切换
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map || !mapLoaded) return;
+
+    console.log(`[坐标系变更] 检测到坐标系变化: ${currentCRS.code} - ${currentCRS.name}`);
+    
+    // 暂时仅支持地理坐标系
+    if (currentCRS.type !== 'geographic') {
+      console.warn('[坐标系变更] 投影坐标系功能待完善，忽略此次变更');
+      return;
+    }
+    
+    // 保存当前视图状态
+    const oldView = map.getView();
+    const oldCenter = oldView.getCenter();
+    const oldZoom = oldView.getZoom();
+    const oldProjection = oldView.getProjection().getCode();
+    
+    // 如果投影相同，跳过
+    if (oldProjection === currentCRS.code) {
+      console.log('[坐标系变更] 投影相同，跳过更新');
+      return;
+    }
+    
+    // 创建新的View，使用新的地理坐标系
+    const newView = new View({
+      projection: currentCRS.code,
+      center: oldCenter, // OpenLayers会自动转换坐标
+      zoom: oldZoom,
+      constrainRotation: false,
+      enableRotation: false,
+      smoothResolutionConstraint: false,
+      smoothExtentConstraint: false,
+      multiWorld: true, // 地理坐标系允许跨世界
+      minZoom: 0,
+      maxZoom: 28,
+      constrainOnlyCenter: false,
+      showFullExtent: false,
+    });
+    
+    // 设置新View
+    map.setView(newView);
+    
+    console.log(`[坐标系变更] 地图投影已更新: ${oldProjection} -> ${currentCRS.code}`);
+    
+    // 强制刷新地图
+    map.updateSize();
+    map.render();
+  }, [currentCRS.code, mapLoaded]);
 
   // 辅助函数：anchor转换
   const mapAnchorToOL = (anchor?: string): { textAlign: CanvasTextAlign; textBaseline: CanvasTextBaseline } => {

@@ -60,22 +60,47 @@ export const createDefaultSymbolizer = (geometryType: string): Symbolizer => {
 
 /**
  * 将符号配置转换为 OpenLayers Style
+ * 支持根据要素几何类型动态返回样式
  */
 export const symbolizerToOLStyle = (
   symbolizer?: Symbolizer,
   opacity: number = 1
 ): StyleLike => {
   if (!symbolizer) {
-    // 默认符号：多边形样式
-    return new Style({
-      fill: new Fill({
-        color: `rgba(51, 136, 255, ${0.5 * opacity})`,
-      }),
-      stroke: new Stroke({
-        color: `rgba(51, 136, 255, ${1 * opacity})`,
-        width: 2,
-      }),
-    });
+    // 默认符号：返回样式函数，根据要素类型动态创建样式
+    return (feature) => {
+      const geomType = feature?.getGeometry()?.getType()?.toLowerCase() || '';
+      
+      if (geomType.includes('point')) {
+        // 点默认样式 - 返回数组
+        return [new Style({
+          image: new Circle({
+            radius: 4,
+            fill: new Fill({ color: `rgba(51, 136, 255, ${0.8 * opacity})` }),
+            stroke: new Stroke({ color: `rgba(0, 102, 204, ${1 * opacity})`, width: 2 }),
+          }),
+        })];
+      } else if (geomType.includes('line')) {
+        // 线默认样式 - 返回数组
+        return [new Style({
+          stroke: new Stroke({
+            color: `rgba(51, 136, 255, ${1 * opacity})`,
+            width: 2,
+          }),
+        })];
+      } else {
+        // 多边形默认样式 - 返回数组
+        return [new Style({
+          fill: new Fill({
+            color: `rgba(51, 136, 255, ${0.5 * opacity})`,
+          }),
+          stroke: new Stroke({
+            color: `rgba(51, 136, 255, ${1 * opacity})`,
+            width: 2,
+          }),
+        })];
+      }
+    };
   }
 
   if (symbolizer.type === 'point' && symbolizer.point) {

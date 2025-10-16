@@ -8,6 +8,8 @@ import StatusBar from './components/StatusBar/StatusBar';
 import { useProjectStore } from './stores/projectStore';
 import { useLayerStore } from './stores/layerStore';
 import { useWindowStore } from './stores/windowStore';
+import { useCRSProjection } from './hooks/useCRSProjection';
+import { useRestoreSession } from './hooks/useRestoreSession';
 import { invoke } from '@tauri-apps/api/core';
 import './App.css';
 
@@ -16,6 +18,12 @@ const { Content } = Layout;
 function App() {
   const [appReady, setAppReady] = useState(false);
   const { currentProject } = useProjectStore();
+  
+  // 启用坐标系投影功能
+  useCRSProjection();
+  
+  // 恢复上次会话
+  useRestoreSession();
 
   // 禁用右键菜单（保留开发者工具用于调试）
   useEffect(() => {
@@ -36,86 +44,8 @@ function App() {
     const initApp = async () => {
       console.log('[初始化] 开始');
       
-      // 先执行会话恢复
-      try {
-        const { loadProjectState, filterExistingLayers } = await import('./services/storageService');
-        const { useMapStore } = await import('./stores/mapStore');
-        const { useLayerStore } = await import('./stores/layerStore');
-        
-        const savedState = loadProjectState();
-        
-        if (savedState) {
-          console.log('[初始化] 恢复地图状态');
-          // 恢复地图状态
-          const mapStore = useMapStore.getState();
-          if (savedState.mapState) {
-            mapStore.setCenter(savedState.mapState.center);
-            mapStore.setZoom(savedState.mapState.zoom);
-          }
-          
-          console.log('[初始化] 恢复图层数据');
-          // 恢复图层
-          const layersWithSource = savedState.layers.map((layer: any) => ({
-            ...layer,
-            source: {
-              type: layer.sourceType,
-              path: layer.path,
-              url: layer.url
-            }
-          }));
-          const existingLayers = await filterExistingLayers(layersWithSource);
-          
-          if (existingLayers.length > 0) {
-            const layerStore = useLayerStore.getState();
-            const { invoke: tauriInvoke } = await import('@tauri-apps/api/core');
-            
-            console.log(`[初始化] 加载 ${existingLayers.length} 个图层`);
-            for (const layerData of existingLayers) {
-              try {
-                if (layerData.type === 'basemap') continue;
-                
-                if (layerData.path) {
-                  const info = await tauriInvoke('gdal_open_vector', { path: layerData.path });
-                  const geojson = await tauriInvoke('gdal_get_geojson', { path: layerData.path });
-                  
-                  const layer = {
-                    id: layerData.id || `layer-${Date.now()}`,
-                    name: layerData.name,
-                    type: layerData.type as 'vector' | 'raster' | 'basemap',
-                    source: {
-                      type: (layerData.sourceType || 'shapefile') as 'shapefile' | 'geojson' | 'wms' | 'xyz',
-                      path: layerData.path,
-                      url: layerData.url,
-                    },
-                    visible: layerData.visible !== false,
-                    opacity: layerData.opacity || 1,
-                    style: layerData.style,
-                    labelConfig: layerData.labelConfig,
-                    extent: layerData.extent || ((info as any).extent ? {
-                      minX: (info as any).extent.min_x,
-                      minY: (info as any).extent.min_y,
-                      maxX: (info as any).extent.max_x,
-                      maxY: (info as any).extent.max_y,
-                    } : undefined),
-                    geojson,
-                  };
-                  
-                  await layerStore.addLayer(layer);
-                  console.log(`[初始化] 已加载图层: ${layerData.name}`);
-                }
-              } catch (error) {
-                console.warn('恢复图层失败:', layerData.name, error);
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('恢复会话失败:', error);
-      }
-      
-      console.log('[初始化] 等待界面渲染');
       // 等待界面渲染完成
-      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       console.log('[初始化] 完成，显示主界面');
       

@@ -7,6 +7,7 @@ import AttributePanel from './AttributePanel';
 import FeatureInfoPanel from './FeatureInfoPanel';
 import SymbologyPanel from './SymbologyPanel';
 import LabelPanel from './LabelPanel';
+import CRSPanel from './CRSPanel';
 import { useLayerStore } from '../../stores/layerStore';
 
 const WindowManager: React.FC = () => {
@@ -56,6 +57,9 @@ const WindowManager: React.FC = () => {
             请在图层面板中选择图层并打开标注设置
           </div>
         );
+        
+      case 'crs-settings':
+        return <CRSPanel />;
         
       default:
         return null;

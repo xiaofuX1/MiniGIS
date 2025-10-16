@@ -3,6 +3,8 @@ import { loadProjectState, filterExistingLayers } from '../services/storageServi
 import { useMapStore } from '../stores/mapStore';
 import { useLayerStore } from '../stores/layerStore';
 import { useProjectStore } from '../stores/projectStore';
+import { useCRSStore } from '../stores/crsStore';
+import { useUiStore } from '../stores/uiStore';
 import { message } from 'antd';
 
 /**
@@ -12,16 +14,87 @@ export const useRestoreSession = () => {
   useEffect(() => {
     const restoreSession = async () => {
       try {
+        console.log('[会话恢复] 开始恢复上次会话');
+        
         // 加载上次的项目状态
         const savedState = loadProjectState();
         
-        if (!savedState) return;
+        if (!savedState) {
+          console.log('[会话恢复] 没有保存的会话');
+          return;
+        }
+        
+        console.log('[会话恢复] 找到保存的会话:', savedState);
         
         // 恢复地图状态
+        console.log('[会话恢复] 恢复地图状态');
         const mapStore = useMapStore.getState();
         if (savedState.mapState) {
           mapStore.setCenter(savedState.mapState.center);
           mapStore.setZoom(savedState.mapState.zoom);
+          console.log(`[会话恢复] 地图: center=${JSON.stringify(savedState.mapState.center)}, zoom=${savedState.mapState.zoom}`);
+        }
+        
+        // 恢复坐标系
+        if (savedState.crs) {
+          console.log('[会话恢复] 恢复坐标系:', savedState.crs.code, savedState.crs.name);
+          const crsStore = useCRSStore.getState();
+          const crsInfo = crsStore.getCRSByCode(savedState.crs.code);
+          if (crsInfo) {
+            crsStore.setCRS(crsInfo);
+            console.log('[会话恢复] 坐标系恢复成功');
+          } else {
+            // 如果找不到预定义的坐标系，使用保存的完整信息
+            crsStore.setCRS(savedState.crs as any);
+            console.log('[会话恢复] 使用自定义坐标系');
+          }
+        } else {
+          console.log('[会话恢复] 没有保存的坐标系');
+        }
+        
+        // 恢复UI布局状态
+        if (savedState.uiState) {
+          console.log('[会话恢复] 恢复UI布局状态');
+          const uiStore = useUiStore.getState();
+          uiStore.setLeftPanelCollapsed(savedState.uiState.leftPanelCollapsed);
+          uiStore.setRightPanelCollapsed(savedState.uiState.rightPanelCollapsed);
+          uiStore.setBottomPanelCollapsed(savedState.uiState.bottomPanelCollapsed);
+          uiStore.setRightPanelType(savedState.uiState.rightPanelType);
+          uiStore.setLeftPanelState(savedState.uiState.leftPanelState);
+          uiStore.setRightPanelState(savedState.uiState.rightPanelState);
+          uiStore.setBottomPanelState(savedState.uiState.bottomPanelState);
+          console.log('[会话恢复] UI布局恢复成功');
+        } else {
+          console.log('[会话恢复] 没有保存的UI状态');
+        }
+        
+        // 恢复底图
+        console.log('[会话恢复] 恢复底图');
+        const layerStore = useLayerStore.getState();
+        if (savedState.basemaps && savedState.basemaps.length > 0) {
+          console.log(`[会话恢复] 恢复 ${savedState.basemaps.length} 个保存的底图`);
+          // 添加保存的底图
+          for (const basemap of savedState.basemaps) {
+            const basemapLayer = {
+              id: basemap.id,
+              name: basemap.name,
+              type: 'basemap' as const,
+              source: {
+                type: 'xyz' as const,
+                url: basemap.url,
+              },
+              visible: basemap.visible,
+              opacity: basemap.opacity,
+            };
+            await layerStore.addLayer(basemapLayer);
+            console.log(`[会话恢复] 底图: ${basemap.name} (visible=${basemap.visible})`);
+          }
+        } else {
+          console.log('[会话恢复] 没有保存的底图，使用默认底图');
+          // 如果没有保存的底图，添加默认底图
+          const { defaultBasemap, defaultBasemapAnnotation } = await import('../stores/layerStore');
+          await layerStore.addLayer(defaultBasemapAnnotation);
+          await layerStore.addLayer(defaultBasemap);
         }
         
         // 过滤不存在的图层文件，传递完整的 layer 对象
@@ -35,10 +108,8 @@ export const useRestoreSession = () => {
         }));
         const existingLayers = await filterExistingLayers(layersWithSource);
         
-        if (existingLayers.length === 0) return;
-        
-        // 恢复图层
-        const layerStore = useLayerStore.getState();
+        // 恢复数据图层
+        console.log(`[会话恢复] 恢复 ${existingLayers.length} 个数据图层`);
         let restoredCount = 0;
         
         for (const layerData of existingLayers) {
@@ -86,9 +157,28 @@ export const useRestoreSession = () => {
           }
         }
         
+        // 恢复属性表状态
+        if (savedState.attributeTableState) {
+          // 延迟恢复属性表，确保图层已经加载完成
+          setTimeout(() => {
+            const { openLayerIds, activeLayerId } = savedState.attributeTableState!;
+            openLayerIds.forEach(layerId => {
+              if (layerStore.layers.find(l => l.id === layerId)) {
+                layerStore.addAttributeTableLayer(layerId);
+              }
+            });
+            if (activeLayerId) {
+              layerStore.setActiveAttributeTableLayer(activeLayerId);
+            }
+          }, 500);
+        }
+        
         // 显示成功消息
+        console.log(`[会话恢复] 恢复完成: ${restoredCount} 个图层`);
         if (restoredCount > 0) {
-          message.success(`已恢复 ${restoredCount} 个图层`);
+          message.success(`已恢复 ${restoredCount} 个图层和界面布局`);
+        } else if (savedState.basemaps || savedState.uiState) {
+          message.success('已恢复界面布局');
         }
         
       } catch (error) {

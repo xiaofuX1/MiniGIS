@@ -37,7 +37,13 @@ export const useMapStore = create<MapStore>((set) => ({
     set({ center });
     // 延迟保存，避免频繁写入
     setTimeout(() => {
-      saveMapState(useMapStore.getState().center, useMapStore.getState().zoom);
+      try {
+        const { useLayerStore } = require('./layerStore');
+        useLayerStore.getState().saveAllState();
+      } catch (e) {
+        // 如果layerStore未加载，使用简单保存
+        saveMapState(useMapStore.getState().center, useMapStore.getState().zoom);
+      }
     }, 1000);
   },
   
@@ -45,7 +51,13 @@ export const useMapStore = create<MapStore>((set) => ({
     set({ zoom });
     // 延迟保存，避免频繁写入
     setTimeout(() => {
-      saveMapState(useMapStore.getState().center, useMapStore.getState().zoom);
+      try {
+        const { useLayerStore } = require('./layerStore');
+        useLayerStore.getState().saveAllState();
+      } catch (e) {
+        // 如果layerStore未加载，使用简单保存
+        saveMapState(useMapStore.getState().center, useMapStore.getState().zoom);
+      }
     }, 1000);
   },
   
