@@ -2,7 +2,7 @@
 
 本文档记录MiniGIS项目的所有重要更改。
 
-## [Unreleased]
+## [0.3.0] - 2025-10-16
 
 ### ✨ 新增功能
 
@@ -123,5 +123,6 @@
 - **Minor (0.x.0)**: 新功能添加，向后兼容
 - **Patch (0.0.x)**: Bug修复和小改进
 
+[0.3.0]: https://github.com/xiaofuX1/MiniGIS/releases/tag/v0.3.0
 [0.2.0]: https://github.com/xiaofuX1/MiniGIS/releases/tag/v0.2.0
 [0.1.0]: https://github.com/xiaofuX1/MiniGIS/releases/tag/v0.1.0

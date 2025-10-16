@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Tauri](https://img.shields.io/badge/Tauri-2.0-orange.svg)
 ![React](https://img.shields.io/badge/React-18-blue.svg)
@@ -15,18 +15,17 @@
 
 ---
 
-## ✨ 最新更新 (v0.2.0)
+## ✨ 最新更新 (v0.3.0)
 
 ### 🎉 重大改进
 
-- ✅ **GDAL集成** - 完整支持Shapefile、GeoJSON、GeoPackage等格式
-- ✅ **坐标转换** - 自动转换到WGS84，支持投影坐标系
-- ✅ **MSI安装包** - 企业级Windows安装程序
-- ✅ **符号系统** - 完整的点、线、面符号自定义
-- ✅ **OpenLayers引擎** - 企业级开源地图库，功能强大
-- ✅ **测量工具** - 距离、面积测量功能
+- ✅ **坐标系统增强** - 完整的CGCS2000支持，动态投影切换
+- ✅ **会话恢复** - 自动保存和恢复所有应用状态
+- ✅ **底图记忆** - 保持用户选择的底图配置
+- ✅ **循环依赖修复** - 优化代码结构，消除警告
+- ✅ **完整状态管理** - 地图、坐标系、UI布局全方位保存
 
-详见 [CHANGELOG.md](./CHANGELOG.md) | [发布说明](./docs/releases/v0.2.0.md)
+详见 [CHANGELOG.md](./CHANGELOG.md)
 
 ## 功能特性
 
@@ -155,23 +154,6 @@ MiniGIS/
 - **插件系统**: 预留插件接口
 - **主题定制**: 支持主题切换和定制
 - **多语言**: 支持国际化
-
-## 📅 开发计划
-
-### v0.3.0 计划
-- [ ] 空间查询功能（点选、框选、属性查询）
-- [ ] 数据导出（GeoJSON、CSV）
-- [ ] 打印和地图导出
-- [ ] 更多底图服务（OSM、Bing）
-- [ ] 图层样式模板库
-
-### 长期愿景
-- [ ] 空间分析工具集（缓冲区、叠加、裁剪等）
-- [ ] 矢量数据编辑（创建、修改、删除要素）
-- [ ] 栅格数据支持（GeoTIFF、影像显示）
-- [ ] 3D地形可视化
-- [ ] 插件系统
-- [ ] 云端协作功能
 
 ## 🤝 贡献指南
 
