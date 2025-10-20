@@ -1,4 +1,4 @@
-# v0.2.0 发布检查清单
+# 发布检查清单模板
 
 ## 准备工作
 
@@ -15,7 +15,7 @@
 
 - [ ] 运行开发版本测试所有功能
   ```bash
-  npm run dev:gdal
+  npm run tauri:dev
   ```
 
 - [ ] 构建MSI安装包
@@ -35,18 +35,18 @@
 - [ ] 提交所有更改
   ```bash
   git add .
-  git commit -m "chore: 准备v0.2.0发布"
+  git commit -m "chore: 准备vX.X.X发布"
   ```
 
 - [ ] 创建版本标签
   ```bash
-  git tag -a v0.2.0 -m "MiniGIS v0.2.0 正式发布"
+  git tag -a vX.X.X -m "MiniGIS vX.X.X 正式发布"
   ```
 
 - [ ] 推送到GitHub
   ```bash
   git push origin main
-  git push origin v0.2.0
+  git push origin vX.X.X
   ```
 
 ## GitHub Release
@@ -54,12 +54,12 @@
 - [ ] 访问 https://github.com/xiaofuX1/MiniGIS/releases/new
 
 - [ ] 填写发布信息
-  - Tag: `v0.2.0`
-  - Title: `MiniGIS v0.2.0 - GDAL完整支持`
-  - Description: 复制 `RELEASE_NOTES_v0.2.0.md` 内容
+  - Tag: `vX.X.X`
+  - Title: `MiniGIS vX.X.X - 版本标题`
+  - Description: 复制对应版本的 Release Notes 内容
 
 - [ ] 上传文件
-  - [ ] `MiniGIS_0.2.0_x64_zh-CN.msi`
+  - [ ] `MiniGIS_X.X.X_x64_zh-CN.msi`
   - [ ] 计算SHA256校验和并添加到说明
 
 - [ ] 勾选"Set as latest release"
@@ -77,7 +77,7 @@
 
 生成安装包SHA256：
 ```powershell
-Get-FileHash "target\release\bundle\msi\MiniGIS_0.2.0_x64_zh-CN.msi" -Algorithm SHA256
+Get-FileHash "target\release\bundle\msi\MiniGIS_X.X.X_x64_zh-CN.msi" -Algorithm SHA256
 ```
 
 添加到Release Notes：
@@ -91,7 +91,7 @@ Get-FileHash "target\release\bundle\msi\MiniGIS_0.2.0_x64_zh-CN.msi" -Algorithm 
 如果发布后发现问题：
 1. 不要删除Release
 2. 创建hotfix分支
-3. 修复并发布v0.2.1
+3. 修复并发布补丁版本
 
 ---
 

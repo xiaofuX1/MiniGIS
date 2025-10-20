@@ -112,5 +112,25 @@ pub struct VectorInfo {
     pub projection: Option<String>,
 }
 
+// 多图层矢量文件信息（用于KML、GDB等多图层格式）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MultiLayerVectorInfo {
+    pub path: String,
+    pub layer_count: usize,
+    pub layers: Vec<LayerInfo>,
+    pub projection: Option<String>,
+}
+
+// 单个图层信息
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LayerInfo {
+    pub name: String,
+    pub index: usize,
+    pub feature_count: usize,
+    pub geometry_type: String,
+    pub fields: Vec<AttributeField>,
+    pub extent: Extent,
+}
+
 // 向后兼容的别名
 pub type ShapefileInfo = VectorInfo;

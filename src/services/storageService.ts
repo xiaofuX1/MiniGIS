@@ -26,8 +26,10 @@ export interface ProjectState {
     sourceType: string;  // 图层源类型
     path?: string;
     url?: string;
+    layerIndex?: number; // KML等多图层文件的图层索引
     visible: boolean;
     opacity: number;
+    projection?: string;  // 源坐标系
     style?: {
       fillColor?: string;
       strokeColor?: string;
@@ -42,6 +44,26 @@ export interface ProjectState {
       maxX: number;
       maxY: number;
     };
+    // 分组相关字段
+    groupId?: string;
+    isGroup?: boolean;
+    expanded?: boolean;
+    children?: Array<{
+      id: string;
+      name: string;
+      type: string;
+      sourceType: string;
+      path?: string;
+      url?: string;
+      layerIndex?: number;
+      visible: boolean;
+      opacity: number;
+      projection?: string;  // 源坐标系
+      style?: any;
+      labelConfig?: any;
+      extent?: any;
+      groupId?: string;
+    }>;
   }>;
   // 坐标系信息
   crs?: {
@@ -213,9 +235,45 @@ export const checkFileExists = async (path: string): Promise<boolean> => {
 export const filterExistingLayers = async (layers: any[]): Promise<any[]> => {
   const results = await Promise.all(
     layers.map(async (layer) => {
-      if (layer.type === 'basemap' || !layer.source?.path) {
-        // 底图或不需要文件的图层直接保留
+      // 底图直接保留
+      if (layer.type === 'basemap') {
         return { layer, exists: true };
+      }
+      
+      // 分组图层：检查所有子图层
+      if (layer.isGroup && layer.children) {
+        const childResults = await Promise.all(
+          layer.children.map(async (child: any) => {
+            if (!child.path) {
+              return { child, exists: false };
+            }
+            const exists = await checkFileExists(child.path);
+            return { child, exists };
+          })
+        );
+        
+        // 过滤存在的子图层
+        const existingChildren = childResults
+          .filter(r => r.exists)
+          .map(r => r.child);
+        
+        // 如果有子图层存在，保留分组
+        if (existingChildren.length > 0) {
+          return {
+            layer: {
+              ...layer,
+              children: existingChildren
+            },
+            exists: true
+          };
+        } else {
+          return { layer, exists: false };
+        }
+      }
+      
+      // 普通图层：检查文件是否存在
+      if (!layer.source?.path) {
+        return { layer, exists: false };
       }
       
       const exists = await checkFileExists(layer.source.path);

@@ -8,6 +8,7 @@ import FeatureInfoPanel from './FeatureInfoPanel';
 import SymbologyPanel from './SymbologyPanel';
 import LabelPanel from './LabelPanel';
 import CRSPanel from './CRSPanel';
+import ExportPanel from './ExportPanel';
 import { useLayerStore } from '../../stores/layerStore';
 
 const WindowManager: React.FC = () => {
@@ -21,6 +22,18 @@ const WindowManager: React.FC = () => {
   } = useWindowStore();
   
   const { layers } = useLayerStore();
+  
+  // 递归查找图层（包括分组中的子图层）
+  const findLayerById = (layers: any[], id: string): any => {
+    for (const layer of layers) {
+      if (layer.id === id) return layer;
+      if (layer.children) {
+        const found = findLayerById(layer.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
   
   // 渲染窗口内容
   const renderWindowContent = (windowState: WindowState) => {
@@ -36,7 +49,7 @@ const WindowManager: React.FC = () => {
         
       case 'symbology':
         const symbologyLayer = windowState.metadata?.layerId 
-          ? layers.find(l => l.id === windowState.metadata.layerId)
+          ? findLayerById(layers, windowState.metadata.layerId)
           : null;
         return symbologyLayer ? (
           <SymbologyPanel layer={symbologyLayer} />
@@ -48,7 +61,7 @@ const WindowManager: React.FC = () => {
         
       case 'label':
         const labelLayer = windowState.metadata?.layerId
-          ? layers.find(l => l.id === windowState.metadata.layerId)
+          ? findLayerById(layers, windowState.metadata.layerId)
           : null;
         return labelLayer ? (
           <LabelPanel layer={labelLayer} />
@@ -60,6 +73,9 @@ const WindowManager: React.FC = () => {
         
       case 'crs-settings':
         return <CRSPanel />;
+        
+      case 'export-tool':
+        return <ExportPanel />;
         
       default:
         return null;

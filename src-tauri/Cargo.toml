@@ -36,6 +36,7 @@ chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.10", features = ["v4", "serde"] }
 lazy_static = "1.5"
 gdal = "0.17"
+regex = "1.10"
 
 [features]
 default = ["custom-protocol"]

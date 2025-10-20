@@ -31,9 +31,19 @@ const SingleAttributeTable: React.FC<{ layerId: string }> = ({ layerId }) => {
   const contentRef = React.useRef<HTMLDivElement>(null);
   const tableBodyRef = React.useRef<HTMLDivElement>(null);
 
-  // 获取当前显示的图层
+  // 获取当前显示的图层（递归查找，支持子图层）
   const currentLayer = useMemo(() => {
-    return layers.find((l) => l.id === layerId);
+    const findLayerById = (layers: any[], id: string): any => {
+      for (const layer of layers) {
+        if (layer.id === id) return layer;
+        if (layer.children) {
+          const found = findLayerById(layer.children, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    return findLayerById(layers, layerId);
   }, [layers, layerId]);
 
   // 仅在图层ID或路径变化时重新加载数据
@@ -106,16 +116,46 @@ const SingleAttributeTable: React.FC<{ layerId: string }> = ({ layerId }) => {
   }, [selectedFeatureId, data]);
 
   const loadAttributeData = async () => {
-    if (!currentLayerPath) return;
+    if (!currentLayerPath) {
+      console.warn('[属性表] currentLayerPath为空');
+      return;
+    }
+
+    console.log('[属性表] 开始加载数据:', {
+      layerId,
+      layerPath: currentLayerPath,
+      layerIndex: currentLayer?.source?.layerIndex,
+      currentLayer: currentLayer
+    });
 
     setLoading(true);
     try {
-      // 使用 GDAL API 读取属性表
-      const result = await invoke<any>("gdal_get_attribute_table", {
-        path: currentLayerPath,
-        offset: 0,
-        limit: 100000, // 加载所有数据
-      });
+      let result: any;
+      
+      // 如果是多图层文件（如KML），使用图层索引读取
+      if (currentLayer?.source?.layerIndex !== undefined) {
+        console.log('[属性表] 使用图层索引读取:', currentLayer.source.layerIndex);
+        const geojson = await invoke<any>("gdal_get_layer_geojson", {
+          path: currentLayerPath,
+          layerIndex: currentLayer.source.layerIndex,
+        });
+        
+        console.log('[属性表] GeoJSON读取成功:', geojson.features?.length, '个要素');
+        
+        // 转换GeoJSON格式为属性表格式
+        result = {
+          features: geojson.features || [],
+          total: geojson.features?.length || 0
+        };
+      } else {
+        console.log('[属性表] 使用标准API读取');
+        // 使用 GDAL API 读取属性表
+        result = await invoke<any>("gdal_get_attribute_table", {
+          path: currentLayerPath,
+          offset: 0,
+          limit: 100000, // 加载所有数据
+        });
+      }
 
       // 构建列定义
       if (result.features && result.features.length > 0) {
@@ -203,8 +243,14 @@ const SingleAttributeTable: React.FC<{ layerId: string }> = ({ layerId }) => {
         setAllFeatures(fullFeatures);
       }
     } catch (error) {
-      console.error('加载属性表失败:', error);
-      message.error(`加载属性表失败: ${error}`);
+      console.error('[属性表] 加载失败:', {
+        error,
+        layerId,
+        layerPath: currentLayerPath,
+        layerIndex: currentLayer?.source?.layerIndex,
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
+      message.error(`加载属性表失败: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setLoading(false);
     }

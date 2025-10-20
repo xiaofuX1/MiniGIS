@@ -2,6 +2,143 @@
 
 本文档记录MiniGIS项目的所有重要更改。
 
+## [0.4.0] - 2025-10-20
+
+### ✨ 新增功能 - 矢量数据导出
+
+- **📤 完整的数据导出功能** - 支持多种格式的矢量数据导出
+  - **支持格式**:
+    - KML - Google Earth格式
+    - KMZ - 压缩的KML格式
+    - GeoJSON - Web标准地理数据格式
+    - Shapefile - GIS标准矢量格式
+    - GeoPackage - 现代GIS数据容器格式
+  - **功能特性**:
+    - 完整保留所有字段值和几何信息
+    - 使用ogr2ogr工具确保转换准确性
+    - 友好的导出对话框和进度提示
+    - 自动文件命名和保存路径选择
+  - **访问方式**:
+    - 图层右键菜单 → "导出数据"
+    - 工具栏 → "导出工具"窗口
+  - **技术实现**:
+    - 使用GDAL ogr2ogr命令行工具进行格式转换
+    - 智能查找ogr2ogr可执行文件（应用目录/PATH环境变量）
+    - 开发环境和打包环境自动适配
+  - **打包配置**:
+    - build.rs自动复制28个GDAL工具到应用目录
+    - resources配置确保工具文件夹被打包进MSI
+    - 优化复制策略：debug模式只复制到target，release模式同时复制到src-tauri供打包
+  - **修改文件**:
+    - `ExportPanel.tsx` - 新增导出工具面板组件
+    - `LayerPanel.tsx` - 图层右键菜单添加导出选项
+    - `windowStore.ts` - 添加导出工具窗口配置
+    - `gdal_service.rs` - 添加export_vector函数和ogr2ogr查找逻辑
+    - `build.rs` - 添加GDAL工具自动复制逻辑
+    - `tauri.conf.json` - 配置gdal-tools资源打包
+
+### ✨ 新增功能 - KML/KMZ格式支持
+
+- **🗺️ 完整支持KML/KMZ格式** - 新增Google Earth格式的矢量数据支持
+  - **功能特性**:
+    - 支持打开和显示KML/KMZ文件
+    - 自动使用UTF-8编码读取，确保中文正常显示
+    - 智能解析description字段中的属性数据
+    - 将打包的属性自动拆分为独立字段
+    - 完整支持中文字段名和值（如"岸别"、"县（区）"等）
+  - **解析能力**:
+    - 正则表达式解析键值对格式：`"key":value` 或 `"key":"value"`
+    - 自动识别数据类型（字符串、整数、浮点数）
+    - 支持中文字段和复杂属性结构
+  - **影响范围**:
+    - 属性表完整显示所有解析后的字段
+    - 要素信息面板显示完整属性
+    - 地图标注可使用解析后的字段
+  - **修改文件**:
+    - `gdal_service.rs` - 添加`parse_kml_description`解析函数
+    - `gdal_service.rs` - 更新3个读取函数支持KML
+    - `RibbonMenu.tsx` - 优化文件类型映射逻辑
+    - `Cargo.toml` - 添加regex依赖
+  - **技术实现**:
+    - 智能检测文件类型（KML/KMZ使用UTF-8，Shapefile使用GBK）
+    - 在`read_vector_features`、`read_vector_features_with_geometry`和`read_vector_as_geojson`三个函数中都添加解析
+    - 使用正则表达式提取description中的所有属性
+    - 自动合并解析结果到properties对象
+
+### 🐛 Bug修复 - 闪退问题
+
+- **🔥 修复数据解析时的闪退问题** - 彻底解决个别电脑添加数据时软件崩溃的严重bug
+  - **根本原因1**: 坐标转换失败时使用`expect()`导致panic，无错误提示直接崩溃
+  - **根本原因2**: WGS84坐标系创建失败时直接panic
+  - **修复方案**: 将所有`expect()`改为安全的`map_err()`错误处理
+  - **影响文件**: `gdal_service.rs` 的3处关键位置（第73、291、424行）
+  - **影响**: 修复前任何坐标转换失败都会导致软件闪退，修复后返回友好错误信息
+
+### 🐛 Bug修复 - Shapefile中文乱码
+
+- **🔤 修复Shapefile中文属性乱码问题** - 彻底解决中文属性显示为乱码的问题
+  - **根本原因**: Shapefile的DBF文件使用GBK编码，但GDAL默认按UTF-8解析
+  - **问题表现**: 中文字段名和属性值显示为"ͼ����"、"��ʩũ�õ�"等乱码
+  - **修复方案**: 
+    - 实现智能编码检测机制，自动识别UTF-8和GBK编码
+    - 支持`.cpg`编码声明文件，标准化编码管理
+    - 设置全局默认编码为GBK（中国shapefile最常用）
+    - 文件级别可覆盖全局设置，支持混合编码文件
+  - **编码检测优先级**: `.cpg文件` > `GBK` > `UTF-8` > `系统默认`
+  - **影响文件**: 
+    - `gdal_service.rs` - 添加智能编码检测函数
+    - `gdal_init.rs` - 设置全局GBK默认编码
+  - **影响**: 修复前中文属性完全不可读，修复后自动适配各种编码格式
+
+### ✨ 改进功能
+
+- **🚀 GDAL环境自动配置优化** - 开发环境统一启动体验
+  - `npm run tauri:dev` 可直接启动，无需额外脚本
+  - 智能环境检测：自动识别开发模式（vcpkg）和打包模式（应用目录）
+  - PATH环境变量自动配置：同时支持vcpkg和应用目录
+  - GDAL_DATA和PROJ_LIB自动检测和设置
+  - 开发和打包环境使用统一的启动逻辑
+  - debug模式也自动复制GDAL文件到target/debug
+  - 详细的日志输出，方便问题排查
+
+- **📊 增强GDAL初始化日志** - 详细的启动日志帮助诊断问题
+  - 清晰的环境变量设置日志（GDAL_DATA、PROJ_LIB）
+  - DLL加载路径验证日志
+  - proj.db文件存在性检查
+  - GDAL驱动数量统计
+  - 使用✓/✗/⚠符号标记状态，方便快速识别问题
+
+- **🔍 增强健康检查功能** - 更全面的GDAL环境诊断
+  - 详细的驱动列表输出
+  - 关键环境变量验证
+  - 数据文件完整性检查
+  - 更友好的错误提示信息
+
+### 🛠️ 开发工具
+
+- **新增自动诊断脚本** - `scripts/diagnose_crash.ps1`
+  - 自动检查安装完整性
+  - 验证PROJ/GDAL数据文件
+  - 检查DLL依赖
+  - 验证MSVC运行时
+  - 生成详细诊断报告
+
+- **新增故障排查文档** - `docs/CRASH_TROUBLESHOOTING.md`
+  - 完整的问题诊断流程
+  - 根本原因分析
+  - 多种解决方案
+  - 高级调试技巧
+  - 预防措施说明
+
+### 🎯 技术改进
+
+- **安全性**: 移除所有可能导致panic的unsafe代码
+- **容错性**: 增强错误处理机制，确保所有错误都能被优雅处理
+- **可维护性**: 详细的日志便于问题定位和修复
+- **用户体验**: 提供友好的错误信息而非直接崩溃
+
+---
+
 ## [0.3.0] - 2025-10-16
 
 ### ✨ 新增功能
@@ -123,6 +260,7 @@
 - **Minor (0.x.0)**: 新功能添加，向后兼容
 - **Patch (0.0.x)**: Bug修复和小改进
 
+[0.4.0]: https://github.com/xiaofuX1/MiniGIS/releases/tag/v0.4.0
 [0.3.0]: https://github.com/xiaofuX1/MiniGIS/releases/tag/v0.3.0
 [0.2.0]: https://github.com/xiaofuX1/MiniGIS/releases/tag/v0.2.0
 [0.1.0]: https://github.com/xiaofuX1/MiniGIS/releases/tag/v0.1.0

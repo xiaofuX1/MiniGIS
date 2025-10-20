@@ -694,11 +694,23 @@ const MapView: React.FC = () => {
         if (foundFeature) return;
         if (!layer || layer === highlightLayerRef.current || layer === measureLayerRef.current) return;
         
+        // 递归查找图层（包括分组中的子图层）
+        const findLayerById = (layers: Layer[], id: string): Layer | null => {
+          for (const l of layers) {
+            if (l.id === id) return l;
+            if (l.children) {
+              const found = findLayerById(l.children, id);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        
         // 查找对应的业务图层
         let targetLayer: Layer | null = null;
         layerRefs.current.forEach((olLayer, layerId) => {
           if (olLayer === layer) {
-            targetLayer = layersRef.current.find(l => l.id === layerId) || null;
+            targetLayer = findLayerById(layersRef.current, layerId);
           }
         });
         
@@ -838,7 +850,24 @@ const MapView: React.FC = () => {
     const map = mapInstance.current;
     if (!map || !mapLoaded) return;
 
-    const currentLayerIds = new Set(layers.map((l) => l.id));
+    // 展开分组图层，获取所有实际需要渲染的图层
+    const flattenLayers = (layers: Layer[]): Layer[] => {
+      const result: Layer[] = [];
+      layers.forEach(layer => {
+        if (layer.isGroup && layer.children) {
+          // 分组图层：递归展开子图层
+          result.push(...flattenLayers(layer.children));
+        } else if (!layer.isGroup) {
+          // 非分组图层：直接添加
+          result.push(layer);
+        }
+        // 注意：分组图层本身不添加到结果中
+      });
+      return result;
+    };
+
+    const allRenderLayers = flattenLayers(layers);
+    const currentLayerIds = new Set(allRenderLayers.map((l) => l.id));
 
     // 移除已不存在的图层
     layerRefs.current.forEach((olLayer, layerId) => {
@@ -851,8 +880,8 @@ const MapView: React.FC = () => {
 
     const newlyAddedLayers: Layer[] = [];
 
-    // 创建或更新图层
-    layers.forEach((layer, index) => {
+    // 创建或更新图层（只处理实际的渲染图层，不包括分组）
+    allRenderLayers.forEach((layer, index) => {
       const existing = layerRefs.current.get(layer.id);
       const cachedGeojson = layerDataRefs.current.get(layer.id);
       const shouldRecreate = !!layer.geojson && layer.geojson !== cachedGeojson && existing;
@@ -877,7 +906,7 @@ const MapView: React.FC = () => {
             }),
             opacity: layer.opacity,
             visible: layer.visible,
-            zIndex: layers.length - index, // 图层顺序：panel顶部在地图最上层
+            zIndex: allRenderLayers.length - index, // 图层顺序：panel顶部在地图最上层
             preload: 0, // 预加载瓦片层级
           });
           
@@ -937,7 +966,7 @@ const MapView: React.FC = () => {
               style: finalStyle,
               opacity: layer.opacity,
               visible: layer.visible,
-              zIndex: layers.length - index + 100,
+              zIndex: allRenderLayers.length - index + 100,
               updateWhileAnimating: false, // 动画时不更新，提升性能
               updateWhileInteracting: false, // 交互时不更新，提升性能
               declutter: false, // 无标注时禁用
@@ -1004,7 +1033,7 @@ const MapView: React.FC = () => {
             style: styleFunction,
             opacity: layer.opacity,
             visible: layer.visible,
-            zIndex: layers.length - index + 100, // 矢量图层在瓦片图层之上
+            zIndex: allRenderLayers.length - index + 100, // 矢量图层在瓦片图层之上
             // 性能优化配置
             updateWhileAnimating: false, // 动画时不更新，提升性能
             updateWhileInteracting: false, // 交互时不更新，提升性能
@@ -1022,7 +1051,7 @@ const MapView: React.FC = () => {
         if (olLayer instanceof TileLayer) {
           olLayer.setOpacity(layer.opacity);
           olLayer.setVisible(layer.visible);
-          olLayer.setZIndex(layers.length - index);
+          olLayer.setZIndex(allRenderLayers.length - index);
         } else if (olLayer instanceof VectorLayer) {
           // 更新样式
           const baseStyle = symbolizerToOLStyle(layer.style?.symbolizer, layer.opacity);
@@ -1066,7 +1095,7 @@ const MapView: React.FC = () => {
           olLayer.setStyle(styleFunction);
           olLayer.setOpacity(layer.opacity);
           olLayer.setVisible(layer.visible);
-          olLayer.setZIndex(layers.length - index + 100);
+          olLayer.setZIndex(allRenderLayers.length - index + 100);
           
           // 更新数据 - 自动投影转换
           if (layer.geojson && layer.geojson !== cachedGeojson) {

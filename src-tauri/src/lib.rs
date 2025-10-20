@@ -50,9 +50,12 @@ pub fn run() {
             commands::layer::get_layers,
             commands::layer::update_layer_style,
             commands::gdal::gdal_open_vector,
+            commands::gdal::gdal_open_multi_layer_vector,
             commands::gdal::gdal_get_geojson,
+            commands::gdal::gdal_get_layer_geojson,
             commands::gdal::gdal_get_attribute_table,
             commands::gdal::gdal_diagnose,
+            commands::gdal::gdal_export_vector,
             commands::file::file_exists,
             commands::window::close_splashscreen,
         ])

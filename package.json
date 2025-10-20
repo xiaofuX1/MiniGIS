@@ -1,7 +1,7 @@
 {
   "name": "minigis-frontend",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "description": "轻量级桌面GIS系统 - A Lightweight Desktop GIS Application",
   "repository": {
@@ -25,7 +25,8 @@
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
-    "dev:gdal": "powershell -ExecutionPolicy Bypass -File .\\scripts\\tauri-dev.ps1"
+    "dev:gdal": "powershell -ExecutionPolicy Bypass -File .\\scripts\\tauri-dev.ps1",
+    "tauri dev": "tauri dev"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

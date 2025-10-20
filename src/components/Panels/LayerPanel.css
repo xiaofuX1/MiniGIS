@@ -112,3 +112,29 @@
   border-top: 1px solid #e5e7eb;
   background: #f9fafb;
 }
+
+/* 分组图层样式 */
+.layer-list-item.layer-group {
+  background-color: #f3f4f6;
+  font-weight: 600;
+}
+
+.layer-list-item.layer-group:hover {
+  background-color: #e5e7eb;
+}
+
+.layer-expand-btn {
+  margin-right: 4px;
+  cursor: pointer !important;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.layer-expand-btn:hover {
+  background-color: #d1d5db;
+  cursor: pointer !important;
+}

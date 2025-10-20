@@ -6,6 +6,36 @@
 
 ### 🚀 开发脚本
 
+#### `diagnose_crash.ps1` 🆕
+**用途**: 自动诊断MiniGIS闪退问题
+
+**使用方法**:
+```powershell
+# 在出现闪退问题的电脑上运行（推荐以管理员权限）
+.\scripts\diagnose_crash.ps1
+
+# 指定非默认安装路径
+.\scripts\diagnose_crash.ps1 -InstallPath "D:\MyApps\MiniGIS"
+```
+
+**功能**:
+- 检查安装文件完整性
+- 验证PROJ/GDAL数据文件
+- 检查DLL依赖（需要50+个）
+- 验证MSVC运行时库
+- 分析日志文件错误
+- 生成详细诊断报告
+
+**适用场景**:
+- ✅ 用户反馈软件闪退
+- ✅ 安装后无法启动
+- ✅ 添加数据时崩溃
+- ✅ 坐标转换失败
+
+**详见**: [故障排查文档](../docs/CRASH_TROUBLESHOOTING.md)
+
+---
+
 #### `tauri-dev.ps1`
 **用途**: 启动Tauri开发服务器并自动配置GDAL环境
 
@@ -86,7 +116,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\tauri-dev.ps1
 ## 📝 常见问题
 
 ### Q: 为什么需要单独的开发脚本？
-A: 因为GDAL需要特定的环境变量配置，开发脚本会自动设置这些变量，避免手动配置的麻烦。
+A: **已不需要！** 从最新版本开始，`npm run tauri:dev` 已内置自动 GDAL 环境配置。
+   - 应用启动时会自动检测开发环境（vcpkg）和打包环境
+   - `dev:gdal` 脚本保留作为备用方案，或用于特殊环境配置
 
 ### Q: 能否在其他系统上使用？
 A: 这些是PowerShell脚本，仅支持Windows。macOS和Linux用户需要手动配置环境变量。

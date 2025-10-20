@@ -98,14 +98,35 @@ export const useRestoreSession = () => {
         }
         
         // 过滤不存在的图层文件，传递完整的 layer 对象
-        const layersWithSource = savedState.layers.map(layer => ({
-          ...layer,
-          source: {
-            type: layer.sourceType,
-            path: layer.path,
-            url: layer.url
+        const layersWithSource = savedState.layers.map(layer => {
+          const baseLayer = {
+            ...layer,
+            source: {
+              type: layer.sourceType,
+              path: layer.path,
+              url: layer.url,
+              layerIndex: layer.layerIndex
+            }
+          };
+          
+          // 如果是分组图层，处理children
+          if (layer.isGroup && layer.children) {
+            return {
+              ...baseLayer,
+              children: layer.children.map(child => ({
+                ...child,
+                source: {
+                  type: child.sourceType,
+                  path: child.path,
+                  url: child.url,
+                  layerIndex: child.layerIndex
+                }
+              }))
+            };
           }
-        }));
+          
+          return baseLayer;
+        });
         const existingLayers = await filterExistingLayers(layersWithSource);
         
         // 恢复数据图层
@@ -123,34 +144,94 @@ export const useRestoreSession = () => {
             const { invoke } = await import('@tauri-apps/api/core');
             
             if (layerData.path) {
-              // 使用 GDAL 重新打开矢量文件
-              const info = await invoke('gdal_open_vector', { path: layerData.path });
-              const geojson = await invoke('gdal_get_geojson', { path: layerData.path });
-              
-              const layer = {
-                id: layerData.id || `layer-${Date.now()}`,
-                name: layerData.name,
-                type: layerData.type as 'vector' | 'raster' | 'basemap',
-                source: {
-                  type: (layerData.sourceType || 'shapefile') as 'shapefile' | 'geojson' | 'wms' | 'xyz',
-                  path: layerData.path,
-                  url: layerData.url,
-                },
-                visible: layerData.visible !== false,
-                opacity: layerData.opacity || 1,
-                style: layerData.style,  // 完整保留style，包括 symbolizer
-                labelConfig: layerData.labelConfig,  // 恢复标注配置
-                extent: layerData.extent || ((info as any).extent ? {
-                  minX: (info as any).extent.min_x,
-                  minY: (info as any).extent.min_y,
-                  maxX: (info as any).extent.max_x,
-                  maxY: (info as any).extent.max_y,
-                } : undefined),
-                geojson,
-              };
-              
-              await layerStore.addLayer(layer);
-              restoredCount++;
+              // 如果是分组图层，恢复整个分组
+              if (layerData.isGroup && layerData.children) {
+                console.log(`[会话恢复] 恢复分组图层: ${layerData.name}, 包含 ${layerData.children.length} 个子图层`);
+                
+                // 创建分组图层
+                const groupLayer: any = {
+                  id: layerData.id,
+                  name: layerData.name,
+                  type: layerData.type,
+                  source: {
+                    type: layerData.sourceType || 'geo_json',
+                    path: layerData.path,
+                  },
+                  visible: layerData.visible !== false,
+                  opacity: layerData.opacity || 1,
+                  projection: layerData.projection || 'EPSG:4326',
+                  isGroup: true,
+                  expanded: layerData.expanded !== false,
+                  children: [],
+                };
+                
+                // 恢复所有子图层
+                for (const childData of layerData.children) {
+                  try {
+                    const geojson = await invoke('gdal_get_layer_geojson', {
+                      path: childData.path,
+                      layerIndex: childData.layerIndex,
+                    });
+                    
+                    const childLayer = {
+                      id: childData.id,
+                      name: childData.name,
+                      type: childData.type,
+                      source: {
+                        type: childData.sourceType || 'geo_json',
+                        path: childData.path,
+                        layerIndex: childData.layerIndex,
+                      },
+                      visible: childData.visible !== false,
+                      opacity: childData.opacity || 1,
+                      projection: childData.projection || 'EPSG:4326',
+                      style: childData.style,
+                      labelConfig: childData.labelConfig,
+                      extent: childData.extent,
+                      geojson,
+                      groupId: childData.groupId,
+                    };
+                    
+                    groupLayer.children.push(childLayer);
+                  } catch (error) {
+                    console.warn(`恢复子图层失败: ${childData.name}`, error);
+                  }
+                }
+                
+                await layerStore.addLayer(groupLayer);
+                restoredCount++;
+              } else {
+                // 普通图层（非分组）
+                // 使用 GDAL 重新打开矢量文件
+                const info = await invoke('gdal_open_vector', { path: layerData.path });
+                const geojson = await invoke('gdal_get_geojson', { path: layerData.path });
+                
+                const layer = {
+                  id: layerData.id || `layer-${Date.now()}`,
+                  name: layerData.name,
+                  type: layerData.type as 'vector' | 'raster' | 'basemap',
+                  source: {
+                    type: (layerData.sourceType || 'shapefile') as 'shapefile' | 'geojson' | 'wms' | 'xyz',
+                    path: layerData.path,
+                    url: layerData.url,
+                  },
+                  visible: layerData.visible !== false,
+                  opacity: layerData.opacity || 1,
+                  projection: layerData.projection || (info as any).projection || 'EPSG:4326',
+                  style: layerData.style,  // 完整保留style，包括 symbolizer
+                  labelConfig: layerData.labelConfig,  // 恢复标注配置
+                  extent: layerData.extent || ((info as any).extent ? {
+                    minX: (info as any).extent.min_x,
+                    minY: (info as any).extent.min_y,
+                    maxX: (info as any).extent.max_x,
+                    maxY: (info as any).extent.max_y,
+                  } : undefined),
+                  geojson,
+                };
+                
+                await layerStore.addLayer(layer);
+                restoredCount++;
+              }
             }
           } catch (error) {
             console.warn('恢复图层失败:', layerData.name, error);

@@ -18,6 +18,10 @@ export interface Layer {
   style?: LayerStyle;
   extent?: Extent;
   attributes?: AttributeField[];
+  groupId?: string; // 所属分组ID
+  isGroup?: boolean; // 是否为分组图层
+  children?: Layer[]; // 子图层(用于分组显示)
+  expanded?: boolean; // 分组是否展开
 }
 
 export type LayerType = 'vector' | 'raster' | 'basemap' | 'wms' | 'wfs';

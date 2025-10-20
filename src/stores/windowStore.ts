@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type WindowId = 'layer-panel' | 'attribute-table' | 'feature-info' | 'symbology' | 'label' | 'crs-settings';
+export type WindowId = 'layer-panel' | 'attribute-table' | 'feature-info' | 'symbology' | 'label' | 'crs-settings' | 'export-tool';
 export type DockPosition = 'left' | 'right' | 'bottom' | 'floating';
 
 export interface WindowState {
@@ -90,6 +90,15 @@ const defaultWindows: WindowState[] = [
     dockPosition: 'right',
     width: 400,
     height: 600,
+    zIndex: 1,
+  },
+  {
+    id: 'export-tool',
+    title: '导出数据',
+    visible: false,
+    dockPosition: 'right',
+    width: 320,
+    height: 500,
     zIndex: 1,
   },
 ];

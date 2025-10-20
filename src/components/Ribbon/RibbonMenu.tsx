@@ -6,7 +6,8 @@ import {
   EnvironmentOutlined, LineChartOutlined,
   GlobalOutlined, FolderOpenOutlined, InfoCircleOutlined,
   FullscreenOutlined, BgColorsOutlined, FolderViewOutlined,
-  EyeOutlined, FontSizeOutlined, AimOutlined
+  EyeOutlined, FontSizeOutlined, AimOutlined, QuestionCircleOutlined,
+  ExportOutlined
 } from '@ant-design/icons';
 import { Tooltip, Dropdown, message, Modal } from 'antd';
 import { invoke } from '@tauri-apps/api/core';
@@ -16,6 +17,7 @@ import { useSelectionStore } from '../../stores/selectionStore';
 import { useWindowStore } from '../../stores/windowStore';
 import { useCRSStore } from '../../stores/crsStore';
 import { gdalService } from '../../services/gdalService';
+import AboutDialog from '../Dialogs/AboutDialog';
 import './RibbonMenu.css';
 
 interface RibbonTab {
@@ -40,6 +42,7 @@ interface RibbonItem {
 
 const RibbonMenu: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
+  const [aboutDialogVisible, setAboutDialogVisible] = useState(false);
   const { addLayer, layers, removeLayer, selectedLayer, addAttributeTableLayer, selectLayer } = useLayerStore();
   const { clearSelection, setIsSelecting } = useSelectionStore();
   const { showWindow, toggleWindow, updateWindow } = useWindowStore();
@@ -181,7 +184,8 @@ const RibbonMenu: React.FC = () => {
     { key: 'none', label: '无底图', onClick: () => handleBasemapChange('none') },
   ];
 
-  const handleOpenShapefile = async () => {
+  // 打开矢量文件（支持 Shapefile、GeoJSON、KML、KMZ、GPKG 等多种格式）
+  const handleOpenVectorFile = async () => {
     try {
       const selected = await open({
         multiple: false,
@@ -194,7 +198,111 @@ const RibbonMenu: React.FC = () => {
       if (selected) {
         message.loading('正在加载文件...', 0);
         
-        // 使用 GDAL 打开文件
+        // 获取文件扩展名
+        const ext = selected.split('.').pop()?.toLowerCase() || '';
+        const isKmlFile = ext === 'kml' || ext === 'kmz';
+        
+        // KML/KMZ文件可能包含多个图层，使用专用API
+        if (isKmlFile) {
+          try {
+            const multiLayerInfo: any = await invoke('gdal_open_multi_layer_vector', { path: selected });
+            console.log(`[KML文件] 检测到 ${multiLayerInfo.layer_count} 个图层`);
+            
+            if (multiLayerInfo.layer_count === 0) {
+              message.warning('KML文件不包含任何图层');
+              message.destroy();
+              return;
+            }
+            
+            const sourceCrs = multiLayerInfo.projection || 'EPSG:4326';
+            const fileName = selected.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, '') || 'KML图层';
+            
+            if (multiLayerInfo.layer_count === 1) {
+              // 单图层，直接添加
+              const layerInfo = multiLayerInfo.layers[0];
+              const geojson = await invoke('gdal_get_layer_geojson', { path: selected, layerIndex: 0 });
+              
+              const extent = {
+                minX: layerInfo.extent.min_x,
+                minY: layerInfo.extent.min_y,
+                maxX: layerInfo.extent.max_x,
+                maxY: layerInfo.extent.max_y,
+              };
+              
+              await addLayer({
+                id: Date.now().toString(),
+                name: layerInfo.name || fileName,
+                type: 'vector',
+                source: { type: 'geo_json' as any, path: selected },
+                visible: true,
+                opacity: 1,
+                projection: sourceCrs,
+                extent: extent,
+                geojson: geojson,
+              });
+              
+              message.success(`成功加载KML图层: ${layerInfo.name}`);
+            } else {
+              // 多图层，创建分组
+              const groupId = `group_${Date.now()}`;
+              const groupLayer: any = {
+                id: groupId,
+                name: fileName,
+                type: 'vector',
+                source: { type: 'geo_json' as any, path: selected },
+                visible: true,
+                opacity: 1,
+                isGroup: true,
+                expanded: true,
+                children: []
+              };
+              
+              // 添加所有子图层
+              for (let i = 0; i < multiLayerInfo.layers.length; i++) {
+                const layerInfo = multiLayerInfo.layers[i];
+                const geojson = await invoke('gdal_get_layer_geojson', { path: selected, layerIndex: i });
+                
+                const extent = {
+                  minX: layerInfo.extent.min_x,
+                  minY: layerInfo.extent.min_y,
+                  maxX: layerInfo.extent.max_x,
+                  maxY: layerInfo.extent.max_y,
+                };
+                
+                const childLayer: any = {
+                  id: `${groupId}_layer_${i}`,
+                  name: layerInfo.name,
+                  type: 'vector',
+                  source: { 
+                    type: 'geo_json' as any, 
+                    path: selected,
+                    layerIndex: i  // 记录图层索引，用于读取正确的数据
+                  },
+                  visible: true,
+                  opacity: 1,
+                  projection: sourceCrs,
+                  extent: extent,
+                  geojson: geojson,
+                  groupId: groupId,
+                };
+                
+                groupLayer.children.push(childLayer);
+              }
+              
+              // 添加分组图层
+              await addLayer(groupLayer);
+              message.success(`成功加载KML文件: ${fileName} (${multiLayerInfo.layer_count}个图层)`);
+            }
+            
+            message.destroy();
+            return;
+          } catch (kmlError) {
+            console.warn('多图层API失败，回退到单图层模式:', kmlError);
+            // 如果多图层API失败，回退到原来的单图层处理
+          }
+        }
+        
+        // 非KML文件或KML回退模式：使用原有的单图层处理
         const info: any = await invoke('gdal_open_vector', { path: selected });
         
         // 获取数据的原始坐标系
@@ -217,18 +325,32 @@ const RibbonMenu: React.FC = () => {
           maxY: info.extent.max_y,
         } : undefined;
         
-        // 获取文件扩展名
-        const ext = selected.split('.').pop()?.toLowerCase() || 'vector';
+        // 映射文件扩展名到后端支持的source type
+        const getSourceType = (extension: string): string => {
+          switch (extension) {
+            case 'shp':
+              return 'shapefile';
+            case 'kml':
+            case 'kmz':
+            case 'geojson':
+            case 'json':
+              return 'geo_json';
+            case 'gpkg':
+              return 'geo_json';
+            default:
+              return 'geo_json';
+          }
+        };
         
         // 添加图层
         await addLayer({
           id: Date.now().toString(),
           name: selected.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, '') || '矢量图层',
           type: 'vector',
-          source: { type: ext === 'shp' ? 'shapefile' : ext as any, path: selected },
+          source: { type: getSourceType(ext) as any, path: selected },
           visible: true,
           opacity: 1,
-          projection: sourceCrs,  // 保存图层的源坐标系
+          projection: sourceCrs,
           extent: extent,
           geojson: geojson,
         });
@@ -476,7 +598,7 @@ const RibbonMenu: React.FC = () => {
           key: 'data',
           label: '数据',
           items: [
-            { key: 'add-data', label: '添加数据', icon: <PlusOutlined />, onClick: handleOpenShapefile },
+            { key: 'add-data', label: '添加数据', icon: <PlusOutlined />, onClick: handleOpenVectorFile },
             { key: 'basemap', label: '底图', icon: <GlobalOutlined />, dropdown: basemapMenuItems },
             { key: 'crs', label: '坐标系', icon: <AimOutlined />, onClick: () => showWindow('crs-settings') },
           ]
@@ -507,6 +629,13 @@ const RibbonMenu: React.FC = () => {
       label: '分析',
       groups: [
         {
+          key: 'export',
+          label: '导出',
+          items: [
+            { key: 'export-tool', label: '导出', icon: <ExportOutlined />, onClick: () => showWindow('export-tool') },
+          ]
+        },
+        {
           key: 'spatial',
           label: '空间分析',
           items: [
@@ -528,7 +657,20 @@ const RibbonMenu: React.FC = () => {
     {
       key: 'other',
       label: '其他',
-      groups: []
+      groups: [
+        {
+          key: 'info',
+          label: '信息',
+          items: [
+            { 
+              key: 'about', 
+              label: '关于', 
+              icon: <QuestionCircleOutlined />, 
+              onClick: () => setAboutDialogVisible(true) 
+            },
+          ]
+        },
+      ]
     },
   ];
 
@@ -536,6 +678,10 @@ const RibbonMenu: React.FC = () => {
 
   return (
     <>
+      <AboutDialog 
+        visible={aboutDialogVisible} 
+        onClose={() => setAboutDialogVisible(false)} 
+      />
       <div className="ribbon-container">
         <div className="ribbon-tabs">
           {tabs.map(tab => (

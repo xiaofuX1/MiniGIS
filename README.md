@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Tauri](https://img.shields.io/badge/Tauri-2.0-orange.svg)
 ![React](https://img.shields.io/badge/React-18-blue.svg)
@@ -15,22 +15,22 @@
 
 ---
 
-## ✨ 最新更新 (v0.3.0)
+## ✨ 最新更新 (v0.4.0)
 
 ### 🎉 重大改进
 
-- ✅ **坐标系统增强** - 完整的CGCS2000支持，动态投影切换
-- ✅ **会话恢复** - 自动保存和恢复所有应用状态
-- ✅ **底图记忆** - 保持用户选择的底图配置
-- ✅ **循环依赖修复** - 优化代码结构，消除警告
-- ✅ **完整状态管理** - 地图、坐标系、UI布局全方位保存
+- ✅ **矢量数据导出** - 支持KML/KMZ/GeoJSON/Shapefile/GeoPackage导出
+- ✅ **KML/KMZ完整支持** - 打开和显示Google Earth格式，完整解析属性
+- ✅ **闪退问题修复** - 彻底解决坐标转换失败导致的崩溃
+- ✅ **中文乱码修复** - 智能编码检测，完美支持GBK和UTF-8
+- ✅ **GDAL环境优化** - 自动配置和诊断，提升稳定性
 
 详见 [CHANGELOG.md](./CHANGELOG.md)
 
 ## 功能特性
 
 ### 核心功能
-- 📍 **Shapefile 支持** - 打开和查看 Shapefile 格式的地理数据
+- 📍 **多格式矢量支持** - 打开和查看 Shapefile、KML、KMZ、GeoJSON、GeoPackage 等格式的地理数据
 - 📊 **属性表** - 查看和分析空间数据的属性信息
 - 🎨 **现代化 Ribbon UI** - 类似 Office/ArcGIS Pro 的 Ribbon 风格界面
 - 🌍 **Google 卫星底图** - 集成高清卫星影像底图服务
@@ -45,7 +45,7 @@
 - **状态管理**: Zustand + MobX
 - **样式方案**: Tailwind CSS + SCSS
 - **后端语言**: Rust
-- **空间数据**: GDAL 3.8 (Shapefile, GeoJSON, GeoPackage, etc.)
+- **空间数据**: GDAL 3.8 (Shapefile, KML, KMZ, GeoJSON, GeoPackage, GML, etc.)
 
 ## 快速开始
 
@@ -67,9 +67,21 @@ pnpm install
 ### 开发模式
 
 ```bash
-# 启动开发服务器
+# 方式1：直接启动开发服务器（推荐，已自动配置GDAL环境）
 npm run tauri:dev
+
+# 或使用完整命令
+npm run tauri dev
+
+# 方式2：使用PowerShell脚本启动（备用）
+npm run dev:gdal
 ```
+
+**说明**: 
+- 现在 `npm run tauri:dev` 已支持自动检测和配置GDAL环境
+- 在开发模式下，会自动从 vcpkg 加载 GDAL 库和数据
+- 打包后会使用应用程序目录中的 GDAL 文件
+- 无需手动设置环境变量
 
 ### 构建应用
 
@@ -101,24 +113,28 @@ MiniGIS/
 │   │   └── models.rs      # 数据模型
 │   └── Cargo.toml         # Rust 依赖配置
 ├── package.json           # Node.js 依赖配置
-├── tauri.conf.json       # Tauri 配置文件
-└── SYMBOLOGY_GUIDE.md    # 符号系统使用指南
+└── tauri.conf.json       # Tauri 配置文件
 ```
 
 ## 文档
 
+📚 **[文档中心](./docs/README.md)** - 完整的文档导航和索引
+
+### 快速链接
 - 📘 [用户使用指南](./docs/USER_GUIDE.md) - 快速上手和功能介绍
 - 📙 [开发指南](./docs/DEVELOPMENT.md) - 技术架构和开发说明
 - 📕 [GDAL 环境配置](./docs/GDAL_SETUP.md) - GDAL 安装和配置
+- 🤝 [贡献指南](./CONTRIBUTING.md) - 如何参与项目开发
+- 📝 [变更日志](./CHANGELOG.md) - 版本更新记录
 - 🔧 [开发脚本](./scripts/) - 开发和发布脚本
 
 ## 快速使用
 
-### 添加 Shapefile 数据
+### 添加矢量数据
 1. 点击 Ribbon 菜单中的"主页"标签
 2. 点击"添加数据"按钮
-3. 选择 `.shp` 文件
-4. 数据将自动加载到地图视图
+3. 选择矢量文件（支持 `.shp`, `.kml`, `.kmz`, `.geojson`, `.gpkg` 等格式）
+4. 数据将自动加载到地图视图，并自动处理坐标投影
 
 ### 查看属性表
 1. 选择图层

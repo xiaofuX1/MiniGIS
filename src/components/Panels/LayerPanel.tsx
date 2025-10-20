@@ -5,7 +5,8 @@ import {
   DeleteOutlined, MoreOutlined,
   FileImageOutlined, DatabaseOutlined,
   GlobalOutlined, TableOutlined, BgColorsOutlined,
-  FontSizeOutlined
+  FontSizeOutlined, ExportOutlined,
+  FolderOutlined, FolderOpenOutlined, CaretRightOutlined, CaretDownOutlined
 } from '@ant-design/icons';
 import {
   DndContext, 
@@ -36,16 +37,29 @@ interface LayerPanelProps {
 
 interface SortableLayerItemProps {
   layer: Layer;
-  getLayerIcon: (layerType: string) => React.ReactNode;
+  getLayerIcon: (layerType: string, isGroup?: boolean, expanded?: boolean) => React.ReactNode;
   layerMenuItems: (layerId: string) => any[];
   toggleLayerVisibility: (layerId: string) => void;
+  toggleGroupExpand?: (groupId: string) => void;
+  level?: number;
+}
+
+interface LayerItemProps {
+  layer: Layer;
+  getLayerIcon: (layerType: string, isGroup?: boolean, expanded?: boolean) => React.ReactNode;
+  layerMenuItems: (layerId: string) => any[];
+  toggleLayerVisibility: (layerId: string) => void;
+  toggleGroupExpand?: (groupId: string) => void;
+  level: number;
 }
 
 const SortableLayerItem: React.FC<SortableLayerItemProps> = ({ 
   layer, 
   getLayerIcon, 
   layerMenuItems,
-  toggleLayerVisibility 
+  toggleLayerVisibility,
+  toggleGroupExpand,
+  level = 0
 }) => {
   const {
     attributes,
@@ -64,50 +78,144 @@ const SortableLayerItem: React.FC<SortableLayerItemProps> = ({
   };
 
   return (
-    <div 
-      ref={setNodeRef} 
-      style={style}
-      className={`layer-list-item ${isDragging ? 'dragging' : ''}`}
-      {...attributes}
-      {...listeners}
-    >
-      <Checkbox
-        checked={layer.visible}
-        onChange={(e) => {
-          e.stopPropagation();
-          toggleLayerVisibility(layer.id);
-        }}
-        className="layer-checkbox"
-        onClick={(e) => e.stopPropagation()}
-      />
-      {getLayerIcon(layer.type)}
-      <span className="layer-name" title={layer.name}>{layer.name}</span>
-      <Dropdown 
-        menu={{ items: layerMenuItems(layer.id) }} 
-        trigger={['click']}
-        onOpenChange={(open) => {
-          // 阻止拖拽事件
-          if (open) {
-            document.body.style.userSelect = 'none';
-          } else {
-            document.body.style.userSelect = '';
-          }
-        }}
+    <>
+      <div 
+        ref={setNodeRef} 
+        style={{...style, paddingLeft: `${level * 20}px`}}
+        className={`layer-list-item ${isDragging ? 'dragging' : ''} ${layer.isGroup ? 'layer-group' : ''}`}
+        {...attributes}
+        {...listeners}
       >
-        <Button
-          type="text"
-          size="small"
-          icon={<MoreOutlined />}
-          className="layer-menu-btn"
+        {layer.isGroup && (
+          <Button
+            type="text"
+            size="small"
+            icon={layer.expanded ? <CaretDownOutlined /> : <CaretRightOutlined />}
+            className="layer-expand-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (toggleGroupExpand) {
+                toggleGroupExpand(layer.id);
+              }
+            }}
+          />
+        )}
+        <Checkbox
+          checked={layer.visible}
+          onChange={(e) => {
+            e.stopPropagation();
+            toggleLayerVisibility(layer.id);
+          }}
+          className="layer-checkbox"
           onClick={(e) => e.stopPropagation()}
         />
-      </Dropdown>
-    </div>
+        {getLayerIcon(layer.type, layer.isGroup, layer.expanded)}
+        <span className="layer-name" title={layer.name}>{layer.name}</span>
+        <Dropdown 
+          menu={{ items: layerMenuItems(layer.id) }} 
+          trigger={['click']}
+          onOpenChange={(open) => {
+            if (open) {
+              document.body.style.userSelect = 'none';
+            } else {
+              document.body.style.userSelect = '';
+            }
+          }}
+        >
+          <Button
+            type="text"
+            size="small"
+            icon={<MoreOutlined />}
+            className="layer-menu-btn"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </Dropdown>
+      </div>
+      {layer.isGroup && layer.expanded && layer.children && layer.children.map((childLayer) => (
+        <LayerItem
+          key={childLayer.id}
+          layer={childLayer}
+          getLayerIcon={getLayerIcon}
+          layerMenuItems={layerMenuItems}
+          toggleLayerVisibility={toggleLayerVisibility}
+          toggleGroupExpand={toggleGroupExpand}
+          level={level + 1}
+        />
+      ))}
+    </>
+  );
+};
+
+// 普通图层项组件（用于子图层，不参与拖拽排序）
+const LayerItem: React.FC<LayerItemProps> = ({ 
+  layer, 
+  getLayerIcon, 
+  layerMenuItems,
+  toggleLayerVisibility,
+  toggleGroupExpand,
+  level
+}) => {
+  return (
+    <>
+      <div 
+        style={{paddingLeft: `${level * 20}px`}}
+        className={`layer-list-item ${layer.isGroup ? 'layer-group' : ''}`}
+      >
+        {layer.isGroup && (
+          <Button
+            type="text"
+            size="small"
+            icon={layer.expanded ? <CaretDownOutlined /> : <CaretRightOutlined />}
+            className="layer-expand-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (toggleGroupExpand) {
+                toggleGroupExpand(layer.id);
+              }
+            }}
+          />
+        )}
+        <Checkbox
+          checked={layer.visible}
+          onChange={(e) => {
+            e.stopPropagation();
+            toggleLayerVisibility(layer.id);
+          }}
+          className="layer-checkbox"
+          onClick={(e) => e.stopPropagation()}
+        />
+        {getLayerIcon(layer.type, layer.isGroup, layer.expanded)}
+        <span className="layer-name" title={layer.name}>{layer.name}</span>
+        <Dropdown 
+          menu={{ items: layerMenuItems(layer.id) }} 
+          trigger={['click']}
+        >
+          <Button
+            type="text"
+            size="small"
+            icon={<MoreOutlined />}
+            className="layer-menu-btn"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </Dropdown>
+      </div>
+      {layer.isGroup && layer.expanded && layer.children && layer.children.map((childLayer) => (
+        <LayerItem
+          key={childLayer.id}
+          layer={childLayer}
+          getLayerIcon={getLayerIcon}
+          layerMenuItems={layerMenuItems}
+          toggleLayerVisibility={toggleLayerVisibility}
+          toggleGroupExpand={toggleGroupExpand}
+          level={level + 1}
+        />
+      ))}
+    </>
   );
 };
 
 const LayerPanel: React.FC<LayerPanelProps> = ({ onClose }) => {
-  const { layers, toggleLayerVisibility, removeLayer, clearLayers, reorderLayers, addAttributeTableLayer, removeAttributeTableLayer, attributeTableLayerIds } = useLayerStore();
+  const { layers, toggleLayerVisibility, removeLayer, clearLayers, reorderLayers, updateLayer, addAttributeTableLayer, removeAttributeTableLayer, attributeTableLayerIds } = useLayerStore();
   const { showWindow } = useWindowStore();
   
   const sensors = useSensors(
@@ -122,7 +230,13 @@ const LayerPanel: React.FC<LayerPanelProps> = ({ onClose }) => {
     })
   );
 
-  const getLayerIcon = (layerType: string) => {
+  const getLayerIcon = (layerType: string, isGroup?: boolean, expanded?: boolean) => {
+    if (isGroup) {
+      return expanded ? 
+        <FolderOpenOutlined className="layer-type-icon" /> : 
+        <FolderOutlined className="layer-type-icon" />;
+    }
+    
     switch (layerType) {
       case 'vector':
         return <DatabaseOutlined className="layer-type-icon" />;
@@ -132,6 +246,13 @@ const LayerPanel: React.FC<LayerPanelProps> = ({ onClose }) => {
         return <GlobalOutlined className="layer-type-icon" />;
       default:
         return <FileImageOutlined className="layer-type-icon" />;
+    }
+  };
+
+  const toggleGroupExpand = (groupId: string) => {
+    const group = layers.find(l => l.id === groupId);
+    if (group && group.isGroup) {
+      updateLayer(groupId, { expanded: !group.expanded });
     }
   };
 
@@ -147,7 +268,18 @@ const LayerPanel: React.FC<LayerPanelProps> = ({ onClose }) => {
   };
 
   const handleLayerAction = (action: string, layerId: string) => {
-    const layer = layers.find(l => l.id === layerId);
+    // 查找图层，包括分组中的子图层
+    const findLayer = (layers: Layer[]): Layer | undefined => {
+      for (const layer of layers) {
+        if (layer.id === layerId) return layer;
+        if (layer.children) {
+          const found = findLayer(layer.children);
+          if (found) return found;
+        }
+      }
+      return undefined;
+    };
+    const layer = findLayer(layers);
     
     switch (action) {
       case 'delete':
@@ -181,14 +313,29 @@ const LayerPanel: React.FC<LayerPanelProps> = ({ onClose }) => {
           showWindow('label', { layerId: layer.id });
         }
         break;
+      case 'export':
+        // 打开导出工具
+        showWindow('export-tool');
+        break;
       default:
         break;
     }
   };
 
   const layerMenuItems = (layerId: string) => {
-    const layer = layers.find(l => l.id === layerId);
-    const isVectorLayer = layer?.type === 'vector';
+    // 查找图层，包括分组中的子图层
+    const findLayer = (layers: Layer[]): Layer | undefined => {
+      for (const layer of layers) {
+        if (layer.id === layerId) return layer;
+        if (layer.children) {
+          const found = findLayer(layer.children);
+          if (found) return found;
+        }
+      }
+      return undefined;
+    };
+    const layer = findLayer(layers);
+    const isVectorLayer = layer?.type === 'vector' && !layer?.isGroup;
     
     const items: any[] = [
       {
@@ -199,7 +346,7 @@ const LayerPanel: React.FC<LayerPanelProps> = ({ onClose }) => {
       },
     ];
     
-    // 只有矢量图层才显示属性表和标注选项
+    // 只有矢量图层才显示属性表、标注和导出选项
     if (isVectorLayer) {
       items.push(
         {
@@ -213,6 +360,12 @@ const LayerPanel: React.FC<LayerPanelProps> = ({ onClose }) => {
           label: '标注',
           icon: <FontSizeOutlined />,
           onClick: () => handleLayerAction('label', layerId),
+        },
+        {
+          key: 'export',
+          label: '导出数据',
+          icon: <ExportOutlined />,
+          onClick: () => handleLayerAction('export', layerId),
         }
       );
     }
@@ -289,6 +442,8 @@ const LayerPanel: React.FC<LayerPanelProps> = ({ onClose }) => {
                     getLayerIcon={getLayerIcon}
                     layerMenuItems={layerMenuItems}
                     toggleLayerVisibility={toggleLayerVisibility}
+                    toggleGroupExpand={toggleGroupExpand}
+                    level={0}
                   />
                 ))}
               </div>

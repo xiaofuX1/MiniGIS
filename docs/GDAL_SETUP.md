@@ -247,9 +247,9 @@ npm run tauri:dev
 
 ## 📚 参考文档
 
-- [GDAL 集成详细文档](./docs/GDAL_INTEGRATION.md)
 - [GDAL 官方文档](https://gdal.org/)
 - [Rust GDAL 绑定](https://github.com/georust/gdal)
+- [项目开发文档](DEVELOPMENT.md)
 
 ## ❓ 常见问题
 

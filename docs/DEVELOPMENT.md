@@ -338,11 +338,8 @@ npm install
 ### 开发模式
 
 ```bash
-# 标准模式
+# 启动开发服务器（已自动配置GDAL环境）
 npm run tauri:dev
-
-# GDAL 模式（已配置环境变量）
-npm run dev:gdal
 ```
 
 ### 构建发布

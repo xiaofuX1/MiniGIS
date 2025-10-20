@@ -1,5 +1,5 @@
 use crate::errors::Result;
-use crate::models::VectorInfo;
+use crate::models::{VectorInfo, MultiLayerVectorInfo};
 use crate::services::gdal_service;
 
 /// 使用GDAL打开矢量文件
@@ -113,4 +113,34 @@ pub fn gdal_diagnose() -> Result<serde_json::Value> {
         "driver_count": driver_count,
         "drivers": gdal_service::get_supported_drivers().into_iter().take(10).collect::<Vec<_>>()
     }))
+}
+
+/// 导出矢量数据
+#[tauri::command]
+pub async fn gdal_export_vector(
+    input_path: String,
+    output_path: String,
+    format: String,
+    layer_index: Option<usize>,
+) -> Result<()> {
+    if let Some(idx) = layer_index {
+        log::info!("导出矢量数据 (图层索引: {}): {} -> {} (格式: {})", idx, input_path, output_path, format);
+    } else {
+        log::info!("导出矢量数据: {} -> {} (格式: {})", input_path, output_path, format);
+    }
+    gdal_service::export_vector(&input_path, &output_path, &format, layer_index).await
+}
+
+/// 读取多图层矢量文件信息（用于KML、GDB等格式）
+#[tauri::command]
+pub async fn gdal_open_multi_layer_vector(path: String) -> Result<MultiLayerVectorInfo> {
+    log::info!("读取多图层矢量文件: {}", path);
+    gdal_service::read_multi_layer_vector_info(&path).await
+}
+
+/// 读取指定图层的GeoJSON数据
+#[tauri::command]
+pub async fn gdal_get_layer_geojson(path: String, layer_index: usize) -> Result<serde_json::Value> {
+    log::info!("读取图层 {} 的GeoJSON: {}", layer_index, path);
+    gdal_service::read_layer_as_geojson(&path, layer_index).await
 }

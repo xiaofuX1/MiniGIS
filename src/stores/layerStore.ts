@@ -27,6 +27,7 @@ export interface Layer {
     type: 'shapefile' | 'geojson' | 'wms' | 'xyz';
     path?: string;
     url?: string;
+    layerIndex?: number; // KML/GDB等多图层文件的图层索引
   };
   visible: boolean;
   opacity: number;
@@ -46,6 +47,10 @@ export interface Layer {
   };
   geojson?: any;  // GeoJSON数据用于地图渲染
   labelConfig?: LabelConfig; // 标注配置
+  groupId?: string; // 所属分组ID
+  isGroup?: boolean; // 是否为分组图层
+  children?: Layer[]; // 子图层(用于分组显示)
+  expanded?: boolean; // 分组是否展开
 }
 
 interface LayerStore {
@@ -183,30 +188,84 @@ export const useLayerStore = create<LayerStore>((set, get) => ({
   },
 
   removeLayer: (layerId: string) => {
-    set((state) => ({
-      layers: state.layers.filter((l) => l.id !== layerId),
-      selectedLayer: state.selectedLayer?.id === layerId ? null : state.selectedLayer,
-    }));
+    set((state) => {
+      // 递归删除图层（包括从分组中删除子图层）
+      const removeLayers = (layers: Layer[]): Layer[] => {
+        return layers.filter(l => {
+          if (l.id === layerId) {
+            return false;
+          }
+          if (l.children) {
+            l.children = removeLayers(l.children);
+          }
+          return true;
+        }).map(l => {
+          // 如果分组为空，删除该分组
+          if (l.isGroup && l.children && l.children.length === 0) {
+            return null;
+          }
+          return l;
+        }).filter(l => l !== null) as Layer[];
+      };
+      
+      return {
+        layers: removeLayers(state.layers),
+        selectedLayer: state.selectedLayer?.id === layerId ? null : state.selectedLayer,
+      };
+    });
   },
 
   updateLayer: (layerId: string, updates: Partial<Layer>) => {
-    set((state) => ({
-      layers: state.layers.map((l) =>
-        l.id === layerId ? { ...l, ...updates } : l
-      ),
-      selectedLayer:
-        state.selectedLayer?.id === layerId
-          ? { ...state.selectedLayer, ...updates }
-          : state.selectedLayer,
-    }));
+    set((state) => {
+      // 递归更新图层（包括分组中的子图层）
+      const updateLayers = (layers: Layer[]): Layer[] => {
+        return layers.map(l => {
+          if (l.id === layerId) {
+            return { ...l, ...updates };
+          }
+          if (l.children) {
+            return { ...l, children: updateLayers(l.children) };
+          }
+          return l;
+        });
+      };
+      
+      return {
+        layers: updateLayers(state.layers),
+        selectedLayer:
+          state.selectedLayer?.id === layerId
+            ? { ...state.selectedLayer, ...updates }
+            : state.selectedLayer,
+      };
+    });
   },
 
   toggleLayerVisibility: (layerId: string) => {
-    set((state) => ({
-      layers: state.layers.map((l) =>
-        l.id === layerId ? { ...l, visible: !l.visible } : l
-      ),
-    }));
+    set((state) => {
+      // 递归切换图层可见性（包括分组中的子图层）
+      const toggleLayers = (layers: Layer[]): Layer[] => {
+        return layers.map(l => {
+          if (l.id === layerId) {
+            const newVisible = !l.visible;
+            // 如果是分组，同时切换所有子图层的可见性
+            if (l.isGroup && l.children) {
+              return {
+                ...l,
+                visible: newVisible,
+                children: l.children.map(child => ({ ...child, visible: newVisible }))
+              };
+            }
+            return { ...l, visible: newVisible };
+          }
+          if (l.children) {
+            return { ...l, children: toggleLayers(l.children) };
+          }
+          return l;
+        });
+      };
+      
+      return { layers: toggleLayers(state.layers) };
+    });
   },
 
   updateLayerOpacity: (layerId: string, opacity: number) => {
@@ -236,8 +295,18 @@ export const useLayerStore = create<LayerStore>((set, get) => ({
         attributeTableLayerIds: [...attributeTableLayerIds, layerId],
         activeAttributeTableLayerId: layerId
       });
-      // 自动选中该图层
-      const layer = get().layers.find(l => l.id === layerId);
+      // 自动选中该图层（递归查找包括子图层）
+      const findLayer = (layers: Layer[]): Layer | undefined => {
+        for (const layer of layers) {
+          if (layer.id === layerId) return layer;
+          if (layer.children) {
+            const found = findLayer(layer.children);
+            if (found) return found;
+          }
+        }
+        return undefined;
+      };
+      const layer = findLayer(get().layers);
       if (layer) {
         set({ selectedLayer: layer });
       }
@@ -309,11 +378,33 @@ export const useLayerStore = create<LayerStore>((set, get) => ({
         sourceType: l.source.type,
         path: l.source.path,
         url: l.source.url,
+        layerIndex: l.source.layerIndex, // KML等多图层文件的图层索引
         visible: l.visible,
         opacity: l.opacity,
+        projection: l.projection, // 源坐标系
         style: l.style,
         labelConfig: l.labelConfig,
         extent: l.extent,
+        // 分组相关字段
+        groupId: l.groupId,
+        isGroup: l.isGroup,
+        expanded: l.expanded,
+        children: l.children ? l.children.map(child => ({
+          id: child.id,
+          name: child.name,
+          type: child.type,
+          sourceType: child.source.type,
+          path: child.source.path,
+          url: child.source.url,
+          layerIndex: child.source.layerIndex,
+          visible: child.visible,
+          opacity: child.opacity,
+          projection: child.projection, // 源坐标系
+          style: child.style,
+          labelConfig: child.labelConfig,
+          extent: child.extent,
+          groupId: child.groupId,
+        })) : undefined,
       })),
       // 坐标系信息
       crs: crsState ? {

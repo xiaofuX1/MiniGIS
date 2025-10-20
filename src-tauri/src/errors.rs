@@ -9,6 +9,9 @@ pub enum AppError {
     #[error("File read error: {0}")]
     FileReadError(String),
     
+    #[error("File write error: {0}")]
+    FileWriteError(String),
+    
     #[error("Invalid file format: {0}")]
     InvalidFormat(String),
     
