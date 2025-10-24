@@ -50,17 +50,7 @@
       }
     ],
     "security": {
-      "csp": {
-        "default-src": "'self' customprotocol: asset:",
-        "img-src": "'self' asset: http: https: data: blob: 'unsafe-inline'",
-        "style-src": "'self' 'unsafe-inline' 'unsafe-hashes'",
-        "script-src": "'self' 'unsafe-inline' 'unsafe-eval'",
-        "connect-src": "'self' ipc: http: https: ws: wss: data:",
-        "worker-src": "'self' blob:",
-        "child-src": "'self' blob:",
-        "font-src": "'self' data:"
-      },
-      "dangerousDisableAssetCspModification": ["script", "style"]
+      "csp": null
     }
   },
   "bundle": {

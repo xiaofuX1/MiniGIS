@@ -3,7 +3,6 @@ use std::fs;
 use std::path::Path;
 
 #[cfg(target_os = "windows")]
-use std::os::windows::fs::MetadataExt;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DirEntry {
