@@ -1,4 +1,10 @@
 # MiniGIS v0.5.0 Release Script
+
+# Set console encoding to UTF-8
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+chcp 65001 | Out-Null
+
 Write-Host "=== MiniGIS v0.5.0 Release ===" -ForegroundColor Cyan
 Write-Host ""
 
@@ -95,19 +101,16 @@ v0.5.0 是一个重要的功能增强版本，带来了专业GIS软件级别的�
 **完整变更日志**: [CHANGELOG.md](./CHANGELOG.md)
 "@
 
-# Save Release Notes to file
-$releaseNotes | Out-File -FilePath "RELEASE_NOTES_TEMP.md" -Encoding UTF8
-
 Write-Host "Creating GitHub Release..." -ForegroundColor Cyan
 Write-Host "Version: v0.5.0" -ForegroundColor White
-Write-Host "Title: MiniGIS v0.5.0 - Professional Data Management" -ForegroundColor White
+Write-Host "Title: MiniGIS v0.5.0 - 专业数据管理体验" -ForegroundColor White
 Write-Host ""
 
 # Create Release
 Write-Host "Creating release..." -ForegroundColor Yellow
 & gh release create v0.5.0 `
     --title "MiniGIS v0.5.0 - 专业数据管理体验" `
-    --notes-file "RELEASE_NOTES_TEMP.md" `
+    --notes $releaseNotes `
     --latest `
     $msiPath
 
@@ -118,9 +121,6 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "==================================" -ForegroundColor Green
     Write-Host ""
     Write-Host "Visit: https://github.com/xiaofuX1/MiniGIS/releases" -ForegroundColor Cyan
-    
-    # Cleanup
-    Remove-Item "RELEASE_NOTES_TEMP.md" -ErrorAction SilentlyContinue
 } else {
     Write-Host ""
     Write-Host "[ERROR] Failed to create release" -ForegroundColor Red
