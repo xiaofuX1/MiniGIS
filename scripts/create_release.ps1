@@ -45,7 +45,7 @@ $hash = (Get-FileHash $msiPath -Algorithm SHA256).Hash
 Write-Host "✓ SHA256: $hash" -ForegroundColor Green
 Write-Host ""
 
-# 创建Release Notes
+# 创建Release Notes（中文）
 $releaseNotes = @"
 # MiniGIS v0.5.0 🎉
 
@@ -62,14 +62,17 @@ v0.5.0 是一个重要的功能增强版本，带来了专业GIS软件级别的�
 - ✅ **会话恢复修复** - 修复了影响用户体验的关键问题
 - ✅ **坐标系统简化** - 统一使用 CGCS2000 国家标准坐标系
 
+### 🐛 Bug 修复
+
+- 修复会话被空标签页覆盖的问题
+- 修复恢复后图层不显示的问题
+- 修复生产构建中 CSP 阻止内联样式的问题
+
 ### 📦 下载
 
 **Windows MSI 安装包**
 
-**SHA256校验和**:
-```
-$hash
-```
+**SHA256校验和**: ``$hash``
 
 ### 🔧 系统要求
 
