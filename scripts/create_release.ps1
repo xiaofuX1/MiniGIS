@@ -1,51 +1,49 @@
-# MiniGIS v0.5.0 自动发布脚本
-
-Write-Host "=== MiniGIS v0.5.0 发布脚本 ===" -ForegroundColor Cyan
+# MiniGIS v0.5.0 Release Script
+Write-Host "=== MiniGIS v0.5.0 Release ===" -ForegroundColor Cyan
 Write-Host ""
 
-# 刷新环境变量
+# Refresh environment
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 
-# 检查gh命令
-Write-Host "检查GitHub CLI..." -ForegroundColor Yellow
+# Check gh CLI
+Write-Host "Checking GitHub CLI..." -ForegroundColor Yellow
 try {
     $ghVersion = & gh --version 2>&1 | Select-Object -First 1
-    Write-Host "✓ GitHub CLI已安装: $ghVersion" -ForegroundColor Green
+    Write-Host "[OK] GitHub CLI installed: $ghVersion" -ForegroundColor Green
 } catch {
-    Write-Host "✗ GitHub CLI未找到，请重新打开PowerShell" -ForegroundColor Red
+    Write-Host "[ERROR] GitHub CLI not found" -ForegroundColor Red
     exit 1
 }
 
-# 检查认证状态
-Write-Host "检查GitHub认证状态..." -ForegroundColor Yellow
+# Check auth
+Write-Host "Checking GitHub auth..." -ForegroundColor Yellow
 $authStatus = & gh auth status 2>&1
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "需要登录GitHub..." -ForegroundColor Yellow
-    Write-Host "正在启动浏览器登录..." -ForegroundColor Cyan
+    Write-Host "Need to login..." -ForegroundColor Yellow
     & gh auth login
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "✗ 登录失败" -ForegroundColor Red
+        Write-Host "[ERROR] Login failed" -ForegroundColor Red
         exit 1
     }
 }
-Write-Host "✓ GitHub认证成功" -ForegroundColor Green
+Write-Host "[OK] GitHub authenticated" -ForegroundColor Green
 Write-Host ""
 
-# 检查MSI文件
+# Check MSI file
 $msiPath = "target\release\bundle\msi\MiniGIS_0.5.0_x64_zh-CN.msi"
 if (-not (Test-Path $msiPath)) {
-    Write-Host "✗ 找不到MSI文件: $msiPath" -ForegroundColor Red
+    Write-Host "[ERROR] MSI not found: $msiPath" -ForegroundColor Red
     exit 1
 }
-Write-Host "✓ 找到MSI文件: $msiPath" -ForegroundColor Green
+Write-Host "[OK] MSI found: $msiPath" -ForegroundColor Green
 
-# 计算SHA256
-Write-Host "计算SHA256校验和..." -ForegroundColor Yellow
+# Calculate SHA256
+Write-Host "Calculating SHA256..." -ForegroundColor Yellow
 $hash = (Get-FileHash $msiPath -Algorithm SHA256).Hash
-Write-Host "✓ SHA256: $hash" -ForegroundColor Green
+Write-Host "[OK] SHA256: $hash" -ForegroundColor Green
 Write-Host ""
 
-# 创建Release Notes（中文）
+# Create Release Notes (Chinese)
 $releaseNotes = @"
 # MiniGIS v0.5.0 🎉
 
@@ -97,16 +95,16 @@ v0.5.0 是一个重要的功能增强版本，带来了专业GIS软件级别的�
 **完整变更日志**: [CHANGELOG.md](./CHANGELOG.md)
 "@
 
-# 保存Release Notes到文件
+# Save Release Notes to file
 $releaseNotes | Out-File -FilePath "RELEASE_NOTES_TEMP.md" -Encoding UTF8
 
-Write-Host "准备创建GitHub Release..." -ForegroundColor Cyan
-Write-Host "版本: v0.5.0" -ForegroundColor White
-Write-Host "标题: MiniGIS v0.5.0 - 专业数据管理体验" -ForegroundColor White
+Write-Host "Creating GitHub Release..." -ForegroundColor Cyan
+Write-Host "Version: v0.5.0" -ForegroundColor White
+Write-Host "Title: MiniGIS v0.5.0 - Professional Data Management" -ForegroundColor White
 Write-Host ""
 
-# 创建Release
-Write-Host "正在创建Release..." -ForegroundColor Yellow
+# Create Release
+Write-Host "Creating release..." -ForegroundColor Yellow
 & gh release create v0.5.0 `
     --title "MiniGIS v0.5.0 - 专业数据管理体验" `
     --notes-file "RELEASE_NOTES_TEMP.md" `
@@ -116,18 +114,18 @@ Write-Host "正在创建Release..." -ForegroundColor Yellow
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host "==================================" -ForegroundColor Green
-    Write-Host "✅ Release 创建成功！" -ForegroundColor Green
+    Write-Host "[SUCCESS] Release created!" -ForegroundColor Green
     Write-Host "==================================" -ForegroundColor Green
     Write-Host ""
-    Write-Host "访问: https://github.com/xiaofuX1/MiniGIS/releases" -ForegroundColor Cyan
+    Write-Host "Visit: https://github.com/xiaofuX1/MiniGIS/releases" -ForegroundColor Cyan
     
-    # 清理临时文件
+    # Cleanup
     Remove-Item "RELEASE_NOTES_TEMP.md" -ErrorAction SilentlyContinue
 } else {
     Write-Host ""
-    Write-Host "✗ Release 创建失败" -ForegroundColor Red
-    Write-Host "请检查错误信息并重试" -ForegroundColor Yellow
+    Write-Host "[ERROR] Failed to create release" -ForegroundColor Red
+    Write-Host "Please check error messages and retry" -ForegroundColor Yellow
 }
 
 Write-Host ""
-Write-Host "脚本执行完成"
+Write-Host "Script completed"
