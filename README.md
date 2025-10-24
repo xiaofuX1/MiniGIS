@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Tauri](https://img.shields.io/badge/Tauri-2.0-orange.svg)
 ![React](https://img.shields.io/badge/React-18-blue.svg)
@@ -15,29 +15,33 @@
 
 ---
 
-## ✨ 最新更新 (v0.4.0)
+## ✨ 最新更新 (v0.5.0)
 
 ### 🎉 重大改进
 
-- ✅ **矢量数据导出** - 支持KML/KMZ/GeoJSON/Shapefile/GeoPackage导出
-- ✅ **KML/KMZ完整支持** - 打开和显示Google Earth格式，完整解析属性
-- ✅ **闪退问题修复** - 彻底解决坐标转换失败导致的崩溃
-- ✅ **中文乱码修复** - 智能编码检测，完美支持GBK和UTF-8
-- ✅ **GDAL环境优化** - 自动配置和诊断，提升稳定性
+- ✅ **ArcGIS Pro 风格数据浏览器** - 重构添加数据对话框，提供专业的文件浏览和导航体验
+- ✅ **FileGeoDatabase 支持** - 完整支持 ESRI GDB 数据库格式，支持要素集层级结构
+- ✅ **多地图标签页系统** - 类似 ArcGIS Pro 的多地图管理，支持标签页拖拽排序和独立会话
+- ✅ **要素识别增强** - 支持多图层重叠要素的识别和树形导航
+- ✅ **会话恢复修复** - 修复了影响用户体验的关键问题
+- ✅ **坐标系统简化** - 统一使用 CGCS2000 国家标准坐标系
 
 详见 [CHANGELOG.md](./CHANGELOG.md)
 
 ## 功能特性
 
 ### 核心功能
-- 📍 **多格式矢量支持** - 打开和查看 Shapefile、KML、KMZ、GeoJSON、GeoPackage 等格式的地理数据
-- 🗄️ **GDB 数据库支持** - 完整支持 ESRI FileGeoDatabase，自动识别要素集和要素类
+- 📂 **专业数据浏览器** - ArcGIS Pro 风格的添加数据对话框，支持目录树、搜索、快捷方式导航
+- 🗄️ **GDB 数据库支持** - 完整支持 ESRI FileGeoDatabase，双击进入 GDB 浏览要素集和图层
+- 📍 **多格式矢量支持** - 打开和查看 Shapefile、KML、KMZ、GeoJSON、GeoPackage 等格式
+- 🗂️ **多地图标签页** - 类似 ArcGIS Pro 的多地图管理，支持拖拽排序和独立会话持久化
+- 🔍 **增强要素识别** - 多图层重叠要素识别，树形结构导航，要素闪烁定位
 - 📊 **属性表** - 查看和分析空间数据的属性信息
 - 🎨 **现代化 Ribbon UI** - 类似 Office/ArcGIS Pro 的 Ribbon 风格界面
-- 🌍 **Google 卫星底图** - 集成高清卫星影像底图服务
-- 💾 **项目管理** - 创建、打开、保存 GIS 项目
+- 🌍 **CGCS2000 底图** - 集成 CGCS2000 坐标系天地图服务
+- 💾 **会话恢复** - 自动保存和恢复所有标签页、图层、UI 状态
 - 🎯 **符号系统** - 完整的点、线、面符号自定义功能
-- 🗂️ **多地图标签页** - 类似 ArcGIS Pro 的多地图管理，支持标签页拖拽排序
+- 📤 **数据导出** - 支持导出为 KML/KMZ/GeoJSON/Shapefile/GeoPackage
 
 ### 技术栈
 - **前端框架**: React 18 + TypeScript
