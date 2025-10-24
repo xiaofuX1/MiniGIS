@@ -1,0 +1,122 @@
+.map-tabs-container {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.map-tabs {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.map-tabs .ant-tabs-nav {
+  margin-bottom: 0;
+  background: #ffffff;
+  padding: 2px 8px 0 8px;
+  border-bottom: 1px solid #e8e8e8;
+  min-height: 36px;
+}
+
+.map-tabs .ant-tabs-content-holder {
+  flex: 1;
+  overflow: hidden;
+}
+
+.map-tabs .ant-tabs-content {
+  height: 100%;
+}
+
+.map-tabs .ant-tabs-tabpane {
+  height: 100%;
+}
+
+.map-tab-content {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.map-tab-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  font-size: 13px;
+  cursor: grab;
+  user-select: none;
+}
+
+.map-tab-label:active {
+  cursor: grabbing;
+}
+
+.map-tab-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+  line-height: 1;
+}
+
+.map-tab-close-btn {
+  opacity: 0;
+  transition: opacity 0.2s;
+  padding: 2px;
+  font-size: 11px;
+  color: #999;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+}
+
+.map-tab-close-btn:hover {
+  color: #ff4d4f;
+  background: rgba(255, 77, 79, 0.1);
+}
+
+.ant-tabs-tab:hover .map-tab-close-btn,
+.ant-tabs-tab-active .map-tab-close-btn {
+  opacity: 1;
+}
+
+.map-tab-add-btn {
+  height: 28px;
+  width: 28px;
+  min-width: 28px;
+  margin-right: 4px;
+  font-size: 14px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-tab-add-btn:hover {
+  background: #f5f5f5;
+}
+
+.map-tabs .ant-tabs-tab {
+  padding: 6px 12px;
+  transition: all 0.2s;
+  margin: 0 2px;
+  border-radius: 6px 6px 0 0;
+  border: none;
+}
+
+.map-tabs .ant-tabs-tab-active {
+  background: #fff;
+  box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.map-tabs .ant-tabs-tab:hover:not(.ant-tabs-tab-active) {
+  background: #f8f8f8;
+}
+
+/* 移除 Ant Design 默认的标签栏底部线条 */
+.map-tabs .ant-tabs-nav::before {
+  border-bottom: none;
+}

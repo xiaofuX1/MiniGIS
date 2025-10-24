@@ -56,12 +56,13 @@ class GDALService {
     limit?: number
   ): Promise<Array<Record<string, any>>> {
     try {
-      const table = await invoke<AttributeTable>('gdal_get_attribute_table', {
+      const result = await invoke<any>('gdal_get_attribute_table', {
         path,
         offset,
         limit
       });
-      return table.rows;
+      // 后端返回的是 { features: [...], total: ... }
+      return result.features || [];
     } catch (error) {
       console.error('[GDAL] 读取属性表失败:', error);
       throw new Error(`无法读取属性表: ${error}`);

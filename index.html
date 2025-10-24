@@ -1,10 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MiniGIS - Professional GIS Software</title>
+    <title>MiniGIS - 轻量级桌面GIS系统</title>
+    <style>
+      /* 页面初始加载样式 - 与启动页保持一致 */
+      body {
+        margin: 0;
+        padding: 0;
+        background: #0ea5e9;
+        overflow: hidden;
+      }
+      
+      /* 根节点淡入动画 */
+      #root {
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+      }
+      
+      #root.app-ready {
+        opacity: 1;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

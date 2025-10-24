@@ -130,6 +130,8 @@ pub struct LayerInfo {
     pub geometry_type: String,
     pub fields: Vec<AttributeField>,
     pub extent: Extent,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub feature_dataset: Option<String>, // 所属的要素集名称（用于GDB）
 }
 
 // 向后兼容的别名

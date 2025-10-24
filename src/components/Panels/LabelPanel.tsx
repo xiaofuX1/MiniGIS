@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Select, InputNumber, ColorPicker, Switch, Space } from 'antd';
 import type { Layer, LabelConfig } from '../../stores/layerStore';
-import { useLayerStore } from '../../stores/layerStore';
+import { useMapTabsStore } from '../../stores/mapTabsStore';
 import './SymbologyPanel.css';
 
 interface LabelPanelProps {
@@ -10,9 +10,13 @@ interface LabelPanelProps {
 }
 
 const LabelPanel: React.FC<LabelPanelProps> = ({ layer, onClose }) => {
-  const { updateLayer } = useLayerStore();
+  const mapTabsStore = useMapTabsStore();
   const [form] = Form.useForm();
   const [fields, setFields] = useState<string[]>([]);
+  
+  const updateLayer = (layerId: string, updates: Partial<Layer>) => {
+    mapTabsStore.updateLayerInCurrentTab(layerId, updates);
+  };
 
   // 获取图层的字段列表
   useEffect(() => {

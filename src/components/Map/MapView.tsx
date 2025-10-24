@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { invoke } from '@tauri-apps/api/core';
 import Map from "ol/Map";
 import View from "ol/View";
 import { defaults as defaultControls } from "ol/control";
@@ -15,9 +16,8 @@ import type { Coordinate } from "ol/coordinate";
 import { getCenter } from "ol/extent";
 import type { MapBrowserEvent } from "ol";
 import "ol/ol.css";
-import { useMapStore } from "../../stores/mapStore";
-import { useLayerStore } from "../../stores/layerStore";
-import { useSelectionStore } from "../../stores/selectionStore";
+import { useMapTabsStore } from "../../stores/mapTabsStore";
+import { useSelectionStore, InspectedFeatureInfo } from "../../stores/selectionStore";
 import { useWindowStore } from "../../stores/windowStore";
 import { useCRSStore } from "../../stores/crsStore";
 import { registerAllProjections } from "../../utils/projectionRegistry";
@@ -25,11 +25,14 @@ import type { Layer } from "../../stores/layerStore";
 import { symbolizerToOLStyle, createTextStyle } from "../../utils/symbolRenderer";
 import { latLngToOL, olToLatLng, geoJsonExtentToOL, createXYZUrl } from "../../utils/olHelpers";
 import HistoryImageControl from "./HistoryImageControl";
-import NorthArrow from "./NorthArrow";
 import "./MapView.css";
 import * as turf from "@turf/turf";
 
-const MapView: React.FC = () => {
+interface MapViewProps {
+  tabId: string; // 地图标签页ID
+}
+
+const MapView: React.FC<MapViewProps> = ({ tabId }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<Map | null>(null);
   const isInternalUpdate = useRef(false);
@@ -57,15 +60,28 @@ const MapView: React.FC = () => {
   const measureLayerRef = useRef<any>(null);
   const measureSourceRef = useRef<any>(null);
   
-  const { center, zoom, setCenter, setZoom } = useMapStore();
-  const { layers, selectLayer } = useLayerStore();
+  const mapTabsStore = useMapTabsStore();
   const { currentCRS } = useCRSStore();
+  
+  // 获取当前标签页数据
+  const currentTab = mapTabsStore.tabs.find(t => t.id === tabId);
+  const center = currentTab?.center || [39.9093, 116.3974];
+  const zoom = currentTab?.zoom || 10;
+  const layers = currentTab?.layers || [];
+  const selectedLayer = currentTab?.selectedLayer || null;
+  
+  const setCenter = (newCenter: [number, number]) => mapTabsStore.updateCurrentTabCenter(newCenter);
+  const setZoom = (newZoom: number) => mapTabsStore.updateCurrentTabZoom(newZoom);
+  const selectLayer = (layer: Layer | null) => mapTabsStore.setCurrentTabSelectedLayer(layer);
+  
   const layersRef = useRef(layers);
   const {
     setSelectedFeatures,
     clearSelection,
     setIsSelecting,
     setInspectedFeature,
+    setInspectedFeatures,
+    setCurrentInspectedIndex,
     setSelectedFeatureId,
     selectedFeatures,
   } = useSelectionStore();
@@ -181,15 +197,23 @@ const MapView: React.FC = () => {
     selectLayer(layer);
   };
 
-  // 处理要素浏览
+  // 处理要素浏览 - 支持多要素识别
   const handleFeatureInspect = (
-    feature: any,
-    layer: Layer,
+    features: InspectedFeatureInfo[],
   ) => {
-    setInspectedFeature(feature);
-    selectLayer(layer);
+    if (features.length === 0) return;
+    
+    // 设置所有识别到的要素
+    setInspectedFeatures(features);
+    
+    // 选中第一个要素对应的图层
+    selectLayer(features[0].layer);
+    
+    // 显示要素信息窗口
     useWindowStore.getState().showWindow('feature-info');
-    flashFeature(feature);
+    
+    // 闪烁第一个要素
+    flashFeature(features[0].feature);
   };
 
   // 处理工具栏按钮点击
@@ -504,20 +528,18 @@ const MapView: React.FC = () => {
     // 注册所有投影坐标系（首次初始化）
     registerAllProjections();
 
-    // 创建OpenLayers地图 - 暂时固定使用地理坐标系
-    // 投影坐标系功能待完善
-    const mapProjection = currentCRS.type === 'geographic' ? currentCRS.code : 'EPSG:4326';
-    console.log(`[地图初始化] 地图投影: ${mapProjection}, 当前CRS: ${currentCRS.code}`);
+    // 创建OpenLayers地图 - 使用CGCS2000坐标系
+    console.log(`[地图初始化] 使用坐标系: ${currentCRS.code} - ${currentCRS.name}`);
     
     const initialView = new View({
       center: latLngToOL(center),
       zoom: zoom,
-      projection: mapProjection, // 仅使用地理坐标系作为地图投影
+      projection: currentCRS.code, // 使用CGCS2000坐标系
       constrainRotation: false, // 禁用旋转
       enableRotation: false,
       smoothResolutionConstraint: false, // 禁用平滑约束，提升性能
       smoothExtentConstraint: false, // 禁用范围平滑
-      multiWorld: currentCRS.type === 'geographic', // 地理坐标系允许跨世界
+      multiWorld: true, // CGCS2000地理坐标系允许跨世界
       minZoom: 0, // 最小缩放级别
       maxZoom: 28, // 最大缩放级别
       constrainOnlyCenter: false, // 不约束中心点
@@ -688,54 +710,91 @@ const MapView: React.FC = () => {
 
       // 要素选择/浏览模式
       const pixel = e.pixel;
-      let foundFeature = false;
       
-      map.forEachFeatureAtPixel(pixel, (feature, layer) => {
-        if (foundFeature) return;
-        if (!layer || layer === highlightLayerRef.current || layer === measureLayerRef.current) return;
-        
-        // 递归查找图层（包括分组中的子图层）
-        const findLayerById = (layers: Layer[], id: string): Layer | null => {
-          for (const l of layers) {
-            if (l.id === id) return l;
-            if (l.children) {
-              const found = findLayerById(l.children, id);
-              if (found) return found;
-            }
+      // 递归查找图层（包括分组中的子图层）
+      const findLayerById = (layers: Layer[], id: string): Layer | null => {
+        for (const l of layers) {
+          if (l.id === id) return l;
+          if (l.children) {
+            const found = findLayerById(l.children, id);
+            if (found) return found;
           }
-          return null;
-        };
-        
-        // 查找对应的业务图层
-        let targetLayer: Layer | null = null;
-        layerRefs.current.forEach((olLayer, layerId) => {
-          if (olLayer === layer) {
-            targetLayer = findLayerById(layersRef.current, layerId);
-          }
-        });
-        
-        if (!targetLayer) return;
-        
-        // 转换为GeoJSON格式 - 自动投影回数据坐标系
-        const format = new GeoJSON();
-        const dataProjection = (targetLayer as Layer).projection || 'EPSG:4326';
-        const featureProjection = map.getView().getProjection().getCode();
-        
-        const geojsonFeature = format.writeFeatureObject(feature as Feature<Geometry>, {
-          dataProjection: dataProjection,
-          featureProjection: featureProjection,
-        });
-        
-        const idx = feature.get('_index');
-        
-        if (isSelectModeRef.current) {
-          handleFeatureSelect(geojsonFeature, targetLayer, typeof idx === 'number' ? idx : undefined);
-        } else {
-          handleFeatureInspect(geojsonFeature, targetLayer);
         }
+        return null;
+      };
+      
+      if (isSelectModeRef.current) {
+        // 选择模式：只选第一个要素
+        let foundFeature = false;
+        map.forEachFeatureAtPixel(pixel, (feature, layer) => {
+          if (foundFeature) return;
+          if (!layer || layer === highlightLayerRef.current || layer === measureLayerRef.current) return;
+          
+          // 查找对应的业务图层
+          let targetLayer: Layer | null = null;
+          layerRefs.current.forEach((olLayer, layerId) => {
+            if (olLayer === layer) {
+              targetLayer = findLayerById(layersRef.current, layerId);
+            }
+          });
+          
+          if (!targetLayer) return;
+          
+          // 转换为GeoJSON格式
+          const format = new GeoJSON();
+          const dataProjection = (targetLayer as Layer).projection || 'EPSG:4326';
+          const featureProjection = map.getView().getProjection().getCode();
+          
+          const geojsonFeature = format.writeFeatureObject(feature as Feature<Geometry>, {
+            dataProjection: dataProjection,
+            featureProjection: featureProjection,
+          });
+          
+          const idx = feature.get('_index');
+          handleFeatureSelect(geojsonFeature, targetLayer, typeof idx === 'number' ? idx : undefined);
+          foundFeature = true;
+        });
+      } else {
+        // 浏览模式：收集所有重叠要素
+        const inspectedFeatures: InspectedFeatureInfo[] = [];
         
-        foundFeature = true;
-      });
+        map.forEachFeatureAtPixel(pixel, (feature, layer) => {
+          if (!layer || layer === highlightLayerRef.current || layer === measureLayerRef.current) return;
+          
+          // 查找对应的业务图层
+          let targetLayer: Layer | null = null;
+          layerRefs.current.forEach((olLayer, layerId) => {
+            if (olLayer === layer) {
+              targetLayer = findLayerById(layersRef.current, layerId);
+            }
+          });
+          
+          if (!targetLayer) return;
+          
+          // 转换为GeoJSON格式
+          const format = new GeoJSON();
+          const dataProjection = (targetLayer as Layer).projection || 'EPSG:4326';
+          const featureProjection = map.getView().getProjection().getCode();
+          
+          const geojsonFeature = format.writeFeatureObject(feature as Feature<Geometry>, {
+            dataProjection: dataProjection,
+            featureProjection: featureProjection,
+          });
+          
+          // 添加到识别要素列表
+          inspectedFeatures.push({
+            feature: geojsonFeature,
+            layer: targetLayer,
+            layerName: (targetLayer as Layer).name,
+            layerId: (targetLayer as Layer).id,
+          });
+        });
+        
+        // 如果识别到要素，调用处理函数
+        if (inspectedFeatures.length > 0) {
+          handleFeatureInspect(inspectedFeatures);
+        }
+      }
     });
 
     // 鼠标移动：改变光标和更新坐标
@@ -765,6 +824,12 @@ const MapView: React.FC = () => {
 
     // 监听事件
     const handleZoomToFeature = (event: any) => {
+      // 检查事件是否是发给当前标签页的
+      if (event.detail?.tabId && event.detail.tabId !== tabId) {
+        console.log(`[地图 ${tabId}] 忽略发给其他标签页的缩放事件`, event.detail.tabId);
+        return;
+      }
+      
       if (event.detail?.bounds) {
         try {
           const b = event.detail.bounds;
@@ -776,6 +841,7 @@ const MapView: React.FC = () => {
               duration: 500,
               maxZoom: 20, // 限制最大缩放级别
             });
+            console.log(`[地图 ${tabId}] 缩放到要素`);
           }
           if (event.detail?.feature) {
             setHighlightData(event.detail.feature);
@@ -786,9 +852,16 @@ const MapView: React.FC = () => {
       }
     };
 
-    const handleClearSelection = () => {
+    const handleClearSelection = (event: any) => {
+      // 检查事件是否是发给当前标签页的
+      if (event.detail?.tabId && event.detail.tabId !== tabId) {
+        console.log(`[地图 ${tabId}] 忽略发给其他标签页的清除选择事件`, event.detail.tabId);
+        return;
+      }
+      
       setHighlightData(null);
       clearSelection();
+      console.log(`[地图 ${tabId}] 清除选择`);
     };
 
     const handlePanelResize = () => {
@@ -796,12 +869,25 @@ const MapView: React.FC = () => {
     };
 
     const handleMapToolClickFromRibbon = (event: any) => {
+      // 检查事件是否是发给当前标签页的
+      if (event.detail?.tabId && event.detail.tabId !== tabId) {
+        console.log(`[地图 ${tabId}] 忽略发给其他标签页的地图工具事件`, event.detail.tabId);
+        return;
+      }
+      
       if (event.detail?.tool) {
         handleToolClick(event.detail.tool);
+        console.log(`[地图 ${tabId}] 执行地图工具:`, event.detail.tool);
       }
     };
 
     const handleZoomToLayer = (event: any) => {
+      // 检查事件是否是发给当前标签页的
+      if (event.detail?.tabId && event.detail.tabId !== tabId) {
+        console.log(`[地图 ${tabId}] 忽略发给其他标签页的缩放到图层事件`, event.detail.tabId);
+        return;
+      }
+      
       if (event.detail?.extent) {
         try {
           const { minX, minY, maxX, maxY } = event.detail.extent;
@@ -813,7 +899,7 @@ const MapView: React.FC = () => {
             duration: 500,
             maxZoom: 20, // 限制最大缩放级别，避免过度放大
           });
-          console.log('成功缩放到图层:', event.detail.extent);
+          console.log(`[地图 ${tabId}] 成功缩放到图层:`, event.detail.extent);
         } catch (error) {
           console.error('缩放到图层失败:', error);
         }
@@ -826,12 +912,26 @@ const MapView: React.FC = () => {
       console.log('地图已刷新');
     };
 
+    const handleFlashFeature = (event: any) => {
+      // 检查事件是否是发给当前标签页的
+      if (event.detail?.tabId && event.detail.tabId !== tabId) {
+        console.log(`[地图 ${tabId}] 忽略发给其他标签页的闪烁要素事件`, event.detail.tabId);
+        return;
+      }
+      
+      if (event.detail?.feature) {
+        flashFeature(event.detail.feature);
+        console.log(`[地图 ${tabId}] 闪烁要素`);
+      }
+    };
+
     window.addEventListener("zoomToFeature", handleZoomToFeature);
     window.addEventListener("clearSelection", handleClearSelection);
     window.addEventListener("panelResize", handlePanelResize);
     window.addEventListener("mapToolClick", handleMapToolClickFromRibbon);
     window.addEventListener("zoomToLayer", handleZoomToLayer);
     window.addEventListener("refreshMap", handleRefreshMap);
+    window.addEventListener("flashFeature", handleFlashFeature);
 
     return () => {
       window.removeEventListener("zoomToFeature", handleZoomToFeature);
@@ -840,6 +940,7 @@ const MapView: React.FC = () => {
       window.removeEventListener("mapToolClick", handleMapToolClickFromRibbon);
       window.removeEventListener("zoomToLayer", handleZoomToLayer);
       window.removeEventListener("refreshMap", handleRefreshMap);
+      window.removeEventListener("flashFeature", handleFlashFeature);
       
       map.setTarget(undefined);
     };
@@ -849,6 +950,9 @@ const MapView: React.FC = () => {
   useEffect(() => {
     const map = mapInstance.current;
     if (!map || !mapLoaded) return;
+    
+    // 异步处理图层加载
+    (async () => {
 
     // 展开分组图层，获取所有实际需要渲染的图层
     const flattenLayers = (layers: Layer[]): Layer[] => {
@@ -881,7 +985,8 @@ const MapView: React.FC = () => {
     const newlyAddedLayers: Layer[] = [];
 
     // 创建或更新图层（只处理实际的渲染图层，不包括分组）
-    allRenderLayers.forEach((layer, index) => {
+    for (let index = 0; index < allRenderLayers.length; index++) {
+      const layer = allRenderLayers[index];
       const existing = layerRefs.current.get(layer.id);
       const cachedGeojson = layerDataRefs.current.get(layer.id);
       const shouldRecreate = !!layer.geojson && layer.geojson !== cachedGeojson && existing;
@@ -912,10 +1017,55 @@ const MapView: React.FC = () => {
           
           map.addLayer(tileLayer);
           layerRefs.current.set(layer.id, tileLayer);
-        } else if (layer.geojson) {
+        } else if (layer.geojson || (layer.source?.path && layer.type === 'vector')) {
+          // 矢量图层 - 按需加载GeoJSON（支持大型图层优化）
+          let geojsonData = layer.geojson;
+          
+          // 如果没有预加载GeoJSON但有路径，则按需加载
+          if (!geojsonData && layer.source?.path) {
+            // 优化：如果图层不可见且标记为延迟加载，则跳过加载
+            if (layer.deferredLoad && !layer.visible) {
+              console.log(`[延迟加载] 图层 ${layer.name} 不可见，跳过加载`);
+              // 创建空源，等待用户打开图层时再加载
+              geojsonData = { type: 'FeatureCollection', features: [] };
+            } else {
+              console.log(`[按需加载] 图层 ${layer.name} 开始加载GeoJSON...`);
+              try {
+                if (layer.source.layerIndex !== undefined) {
+                  // 多图层文件（KML/GDB）
+                  geojsonData = await invoke('gdal_get_layer_geojson', {
+                    path: layer.source.path,
+                    layerIndex: layer.source.layerIndex
+                  });
+                } else {
+                  // 单图层文件
+                  geojsonData = await invoke('gdal_get_geojson', {
+                    path: layer.source.path
+                  });
+                }
+                console.log(`[按需加载] 图层 ${layer.name} 加载完成`);
+                
+                // 更新图层数据到store，清除deferredLoad标记
+                mapTabsStore.updateLayerInCurrentTab(layer.id, { 
+                  geojson: geojsonData,
+                  deferredLoad: false
+                });
+              } catch (error) {
+                console.error(`[按需加载] 图层 ${layer.name} 加载失败:`, error);
+                // 创建空图层避免崩溃
+                geojsonData = { type: 'FeatureCollection', features: [] };
+              }
+            }
+          }
+          
+          if (!geojsonData) {
+            console.warn(`[图层加载] ${layer.name}: 无GeoJSON数据`);
+            continue; // 跳过当前图层，继续加载后续图层
+          }
+          
           // 矢量图层 - 自动投影转换
           const format = new GeoJSON();
-          const data = prepareGeojsonWithIndex(layer.geojson);
+          const data = prepareGeojsonWithIndex(geojsonData);
           
           // 使用图层的projection作为data坐标系，地图的projection作为feature坐标系
           const dataProjection = layer.projection || 'EPSG:4326';
@@ -977,7 +1127,7 @@ const MapView: React.FC = () => {
             layerRefs.current.set(layer.id, vectorLayer);
             layerDataRefs.current.set(layer.id, layer.geojson);
             newlyAddedLayers.push(layer);
-            return; // 跳过后续处理
+            continue; // 跳过后续处理，加载下一个图层
           }
           
           // 有标注 - 使用样式缓存
@@ -1094,6 +1244,37 @@ const MapView: React.FC = () => {
           
           olLayer.setStyle(styleFunction);
           olLayer.setOpacity(layer.opacity);
+          
+          // 优化：如果图层从不可见变为可见，且有延迟加载标记，则立即加载数据
+          const wasVisible = olLayer.getVisible();
+          if (!wasVisible && layer.visible && layer.deferredLoad && layer.source?.path) {
+            console.log(`[延迟加载触发] 图层 ${layer.name} 变为可见，开始加载数据...`);
+            (async () => {
+              try {
+                let geojsonData;
+                if (layer.source.layerIndex !== undefined) {
+                  geojsonData = await invoke('gdal_get_layer_geojson', {
+                    path: layer.source.path,
+                    layerIndex: layer.source.layerIndex
+                  });
+                } else {
+                  geojsonData = await invoke('gdal_get_geojson', {
+                    path: layer.source.path
+                  });
+                }
+                console.log(`[延迟加载触发] 图层 ${layer.name} 数据加载完成`);
+                
+                // 更新store中的数据
+                mapTabsStore.updateLayerInCurrentTab(layer.id, {
+                  geojson: geojsonData,
+                  deferredLoad: false
+                });
+              } catch (error) {
+                console.error(`[延迟加载触发] 图层 ${layer.name} 加载失败:`, error);
+              }
+            })();
+          }
+          
           olLayer.setVisible(layer.visible);
           olLayer.setZIndex(allRenderLayers.length - index + 100);
           
@@ -1118,10 +1299,15 @@ const MapView: React.FC = () => {
           }
         }
       }
-    });
+    } // for循环结束
 
-    // 自动缩放到新添加的图层
+    // 自动缩放到新添加的图层（跳过恢复会话时的图层）
     newlyAddedLayers.forEach((layer) => {
+      // 如果图层有 skipAutoZoom 标记，跳过自动缩放（用于恢复会话）
+      if ((layer as any).skipAutoZoom) {
+        return;
+      }
+      
       if (layer.type !== "basemap" && layer.extent) {
         try {
           const { minX, minY, maxX, maxY } = layer.extent;
@@ -1139,7 +1325,8 @@ const MapView: React.FC = () => {
     });
 
     previousLayerIds.current = currentLayerIds;
-  }, [layers, mapLoaded]);
+    })(); // 关闭async函数
+  }, [layers, mapLoaded, tabId]);
 
   // 同步选择模式
   useEffect(() => {
@@ -1156,56 +1343,6 @@ const MapView: React.FC = () => {
     layersRef.current = layers;
   }, [layers]);
 
-  // 监听坐标系变化 - 仅支持地理坐标系切换
-  useEffect(() => {
-    const map = mapInstance.current;
-    if (!map || !mapLoaded) return;
-
-    console.log(`[坐标系变更] 检测到坐标系变化: ${currentCRS.code} - ${currentCRS.name}`);
-    
-    // 暂时仅支持地理坐标系
-    if (currentCRS.type !== 'geographic') {
-      console.warn('[坐标系变更] 投影坐标系功能待完善，忽略此次变更');
-      return;
-    }
-    
-    // 保存当前视图状态
-    const oldView = map.getView();
-    const oldCenter = oldView.getCenter();
-    const oldZoom = oldView.getZoom();
-    const oldProjection = oldView.getProjection().getCode();
-    
-    // 如果投影相同，跳过
-    if (oldProjection === currentCRS.code) {
-      console.log('[坐标系变更] 投影相同，跳过更新');
-      return;
-    }
-    
-    // 创建新的View，使用新的地理坐标系
-    const newView = new View({
-      projection: currentCRS.code,
-      center: oldCenter, // OpenLayers会自动转换坐标
-      zoom: oldZoom,
-      constrainRotation: false,
-      enableRotation: false,
-      smoothResolutionConstraint: false,
-      smoothExtentConstraint: false,
-      multiWorld: true, // 地理坐标系允许跨世界
-      minZoom: 0,
-      maxZoom: 28,
-      constrainOnlyCenter: false,
-      showFullExtent: false,
-    });
-    
-    // 设置新View
-    map.setView(newView);
-    
-    console.log(`[坐标系变更] 地图投影已更新: ${oldProjection} -> ${currentCRS.code}`);
-    
-    // 强制刷新地图
-    map.updateSize();
-    map.render();
-  }, [currentCRS.code, mapLoaded]);
 
   // 辅助函数：anchor转换
   const mapAnchorToOL = (anchor?: string): { textAlign: CanvasTextAlign; textBaseline: CanvasTextBaseline } => {
@@ -1234,25 +1371,10 @@ const MapView: React.FC = () => {
     <div className="map-wrapper">
       <div ref={mapContainer} className="map-container" />
       <HistoryImageControl 
-        leftOffset={hasLeftPanel ? dockSizes.left + 15 : 15}
+        leftOffset={15}
         bottomOffset={hasBottomPanel ? dockSizes.bottom + 15 : 15}
       />
-      <div 
-        className="north-arrow-container" 
-        style={{ 
-          right: hasRightPanel ? `${dockSizes.right + 16}px` : '16px',
-          transition: 'right 0.15s ease-out'
-        }}
-      >
-        <NorthArrow />
-      </div>
-      <div 
-        className="map-toolbar"
-        style={{
-          left: hasLeftPanel ? `${dockSizes.left + 16}px` : '16px',
-          transition: 'left 0.15s ease-out'
-        }}
-      >
+      <div className="map-toolbar">
         <button
           className="map-tool"
           title="放大"

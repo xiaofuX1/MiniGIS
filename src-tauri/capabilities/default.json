@@ -24,10 +24,8 @@
     "dialog:allow-message",
     "dialog:allow-ask",
     "dialog:allow-confirm",
-    "fs:allow-read-file",
-    "fs:allow-write-file",
-    "fs:allow-read-dir",
-    "fs:allow-exists",
+    "fs:read-all",
+    "fs:write-all",
     "window-state:allow-restore-state",
     "window-state:allow-save-window-state"
   ]

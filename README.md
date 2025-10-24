@@ -31,11 +31,13 @@
 
 ### 核心功能
 - 📍 **多格式矢量支持** - 打开和查看 Shapefile、KML、KMZ、GeoJSON、GeoPackage 等格式的地理数据
+- 🗄️ **GDB 数据库支持** - 完整支持 ESRI FileGeoDatabase，自动识别要素集和要素类
 - 📊 **属性表** - 查看和分析空间数据的属性信息
 - 🎨 **现代化 Ribbon UI** - 类似 Office/ArcGIS Pro 的 Ribbon 风格界面
 - 🌍 **Google 卫星底图** - 集成高清卫星影像底图服务
 - 💾 **项目管理** - 创建、打开、保存 GIS 项目
 - 🎯 **符号系统** - 完整的点、线、面符号自定义功能
+- 🗂️ **多地图标签页** - 类似 ArcGIS Pro 的多地图管理，支持标签页拖拽排序
 
 ### 技术栈
 - **前端框架**: React 18 + TypeScript

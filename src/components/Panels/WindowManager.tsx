@@ -7,9 +7,8 @@ import AttributePanel from './AttributePanel';
 import FeatureInfoPanel from './FeatureInfoPanel';
 import SymbologyPanel from './SymbologyPanel';
 import LabelPanel from './LabelPanel';
-import CRSPanel from './CRSPanel';
 import ExportPanel from './ExportPanel';
-import { useLayerStore } from '../../stores/layerStore';
+import { useMapTabsStore } from '../../stores/mapTabsStore';
 
 const WindowManager: React.FC = () => {
   const { 
@@ -21,7 +20,9 @@ const WindowManager: React.FC = () => {
     dockSizes
   } = useWindowStore();
   
-  const { layers } = useLayerStore();
+  const mapTabsStore = useMapTabsStore();
+  const currentTab = mapTabsStore.getCurrentTab();
+  const layers = currentTab?.layers || [];
   
   // 递归查找图层（包括分组中的子图层）
   const findLayerById = (layers: any[], id: string): any => {
@@ -70,9 +71,6 @@ const WindowManager: React.FC = () => {
             请在图层面板中选择图层并打开标注设置
           </div>
         );
-        
-      case 'crs-settings':
-        return <CRSPanel />;
         
       case 'export-tool':
         return <ExportPanel />;

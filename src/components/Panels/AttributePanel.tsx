@@ -7,7 +7,7 @@ import {
   ClearOutlined,
 } from "@ant-design/icons";
 import { invoke } from "@tauri-apps/api/core";
-import { useLayerStore } from "../../stores/layerStore";
+import { useMapTabsStore } from "../../stores/mapTabsStore";
 import { useSelectionStore } from "../../stores/selectionStore";
 import { bbox as turfBBox } from "@turf/turf";
 import "./AttributePanel.css";
@@ -18,9 +18,12 @@ interface AttributePanelProps {
 
 // 单个属性表组件
 const SingleAttributeTable: React.FC<{ layerId: string }> = ({ layerId }) => {
-  const { layers } = useLayerStore();
+  const mapTabsStore = useMapTabsStore();
   const { selectedFeatureId, setSelectedFeatureId, setSelectedFeatures } =
     useSelectionStore();
+  
+  const currentTab = mapTabsStore.getCurrentTab();
+  const layers = currentTab?.layers || [];
   const [data, setData] = useState<any[]>([]);
   const [columns, setColumns] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -51,9 +54,23 @@ const SingleAttributeTable: React.FC<{ layerId: string }> = ({ layerId }) => {
   const currentLayerId = currentLayer?.id;
 
   useEffect(() => {
+    console.log('[属性表] 图层信息检查:', {
+      layerId,
+      currentLayer,
+      hasSource: !!currentLayer?.source,
+      sourcePath: currentLayer?.source?.path,
+      sourceType: currentLayer?.source?.type,
+      currentLayerPath
+    });
+    
     if (currentLayerPath) {
       loadAttributeData();
     } else {
+      console.warn('[属性表] 路径为空，无法加载数据', {
+        layerId,
+        currentLayer,
+        reason: !currentLayer ? '图层不存在' : !currentLayer.source ? '图层没有source' : '图层source没有path'
+      });
       setData([]);
       setColumns([]);
       setTotalCount(0);
@@ -277,10 +294,14 @@ const SingleAttributeTable: React.FC<{ layerId: string }> = ({ layerId }) => {
           };
 
           const [minX, minY, maxX, maxY] = turfBBox(geoJsonFeature as any);
-          // 发送缩放和高亮事件给地图（使用 bbox 数组）
+          // 发送缩放和高亮事件给当前标签页的地图（添加 tabId 确保只控制当前地图）
           window.dispatchEvent(
             new CustomEvent("zoomToFeature", {
-              detail: { bounds: [minX, minY, maxX, maxY], feature: geoJsonFeature },
+              detail: { 
+                tabId: currentTab?.id,  // 指定目标地图标签页ID
+                bounds: [minX, minY, maxX, maxY], 
+                feature: geoJsonFeature 
+              },
             }),
           );
         } catch (error) {
@@ -306,8 +327,10 @@ const SingleAttributeTable: React.FC<{ layerId: string }> = ({ layerId }) => {
   const handleClearSelection = () => {
     setSelectedFeatureId(null);
     setSelectedFeatures([]);
-    // 发送清除高亮事件给地图
-    window.dispatchEvent(new CustomEvent("clearSelection"));
+    // 发送清除高亮事件给当前标签页的地图
+    window.dispatchEvent(new CustomEvent("clearSelection", {
+      detail: { tabId: currentTab?.id }
+    }));
   };
 
   if (!currentLayer) {
@@ -398,9 +421,26 @@ const SingleAttributeTable: React.FC<{ layerId: string }> = ({ layerId }) => {
 
 // 主属性表面板组件（支持多标签页）
 const AttributePanel: React.FC<AttributePanelProps> = ({ onClose }) => {
-  const { layers, attributeTableLayerIds, activeAttributeTableLayerId, setActiveAttributeTableLayer, removeAttributeTableLayer } = useLayerStore();
+  const mapTabsStore = useMapTabsStore();
+  
+  const currentTab = mapTabsStore.getCurrentTab();
+  const layers = currentTab?.layers || [];
+  const attributeTableLayerIds = currentTab?.attributeTableLayerIds || [];
+  const activeAttributeTableLayerId = currentTab?.activeAttributeTableLayerId || null;
+  
+  const setActiveAttributeTableLayer = (layerId: string | null) => 
+    mapTabsStore.setActiveAttributeTableLayerInCurrentTab(layerId);
+  const removeAttributeTableLayer = (layerId: string) => 
+    mapTabsStore.removeAttributeTableLayerFromCurrentTab(layerId);
+
+  console.log('[属性表面板] 渲染:', {
+    attributeTableLayerIds,
+    layerCount: layers.length,
+    activeAttributeTableLayerId
+  });
 
   if (attributeTableLayerIds.length === 0) {
+    console.warn('[属性表面板] 没有要显示的图层');
     return (
       <div className="attribute-panel">
         <div className="attribute-panel-content empty">

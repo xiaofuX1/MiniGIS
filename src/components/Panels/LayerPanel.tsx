@@ -27,7 +27,8 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useLayerStore, Layer } from '../../stores/layerStore';
+import type { Layer } from '../../stores/layerStore';
+import { useMapTabsStore } from '../../stores/mapTabsStore';
 import { useWindowStore } from '../../stores/windowStore';
 import './LayerPanel.css';
 
@@ -215,8 +216,20 @@ const LayerItem: React.FC<LayerItemProps> = ({
 };
 
 const LayerPanel: React.FC<LayerPanelProps> = ({ onClose }) => {
-  const { layers, toggleLayerVisibility, removeLayer, clearLayers, reorderLayers, updateLayer, addAttributeTableLayer, removeAttributeTableLayer, attributeTableLayerIds } = useLayerStore();
+  const mapTabsStore = useMapTabsStore();
   const { showWindow } = useWindowStore();
+  
+  const currentTab = mapTabsStore.getCurrentTab();
+  const layers = currentTab?.layers || [];
+  const attributeTableLayerIds = currentTab?.attributeTableLayerIds || [];
+  
+  const toggleLayerVisibility = (layerId: string) => mapTabsStore.toggleLayerVisibilityInCurrentTab(layerId);
+  const removeLayer = (layerId: string) => mapTabsStore.removeLayerFromCurrentTab(layerId);
+  const clearLayers = () => mapTabsStore.clearLayersInCurrentTab();
+  const reorderLayers = (newLayers: Layer[]) => mapTabsStore.reorderLayersInCurrentTab(newLayers);
+  const updateLayer = (layerId: string, updates: Partial<Layer>) => mapTabsStore.updateLayerInCurrentTab(layerId, updates);
+  const addAttributeTableLayer = (layerId: string) => mapTabsStore.addAttributeTableLayerToCurrentTab(layerId);
+  const removeAttributeTableLayer = (layerId: string) => mapTabsStore.removeAttributeTableLayerFromCurrentTab(layerId);
   
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -296,14 +309,21 @@ const LayerPanel: React.FC<LayerPanelProps> = ({ onClose }) => {
         break;
       case 'zoom':
         if (layer && layer.extent) {
-          // 发送缩放事件给地图
+          // 发送缩放事件给当前标签页的地图
           window.dispatchEvent(new CustomEvent('zoomToLayer', { 
-            detail: { extent: layer.extent } 
+            detail: { 
+              tabId: currentTab?.id,  // 指定目标地图标签页ID
+              extent: layer.extent 
+            } 
           }));
         }
         break;
       case 'attributeTable':
         // 打开属性表窗口
+        console.log('[图层菜单] 打开属性表:', {
+          layerId,
+          layer: layers.find(l => l.id === layerId)
+        });
         addAttributeTableLayer(layerId);
         showWindow('attribute-table', { layerId });
         break;
@@ -336,6 +356,16 @@ const LayerPanel: React.FC<LayerPanelProps> = ({ onClose }) => {
     };
     const layer = findLayer(layers);
     const isVectorLayer = layer?.type === 'vector' && !layer?.isGroup;
+    
+    console.log('[图层菜单] 生成菜单:', {
+      layerId,
+      layer,
+      type: layer?.type,
+      isGroup: layer?.isGroup,
+      isVectorLayer,
+      hasSource: !!layer?.source,
+      sourcePath: layer?.source?.path
+    });
     
     const items: any[] = [
       {

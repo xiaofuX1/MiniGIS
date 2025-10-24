@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   LAYERS: 'minigis_layers',
   RECENT_FILES: 'minigis_recent_files',
   LAST_SESSION: 'minigis_last_session',
+  MAP_TABS_SESSION: 'minigis_map_tabs_session',  // 多地图标签页会话
 } as const;
 
 export interface ProjectState {
@@ -291,4 +292,98 @@ export const filterExistingLayers = async (layers: any[]): Promise<any[]> => {
   }
   
   return existingLayers;
+};
+
+/**
+ * 多地图标签页状态
+ */
+export interface MapTabState {
+  id: string;
+  name: string;
+  center: [number, number];
+  zoom: number;
+  layers: Array<{
+    id: string;
+    name: string;
+    type: string;
+    sourceType: string;
+    path?: string;
+    url?: string;
+    layerIndex?: number;
+    visible: boolean;
+    opacity: number;
+    projection?: string;
+    style?: any;
+    labelConfig?: any;
+    extent?: any;
+    groupId?: string;
+    isGroup?: boolean;
+    expanded?: boolean;
+    children?: any[];
+  }>;
+  selectedLayerId?: string | null;
+  attributeTableLayerIds: string[];
+  activeAttributeTableLayerId: string | null;
+  createdAt: number;
+}
+
+export interface MapTabsSessionState {
+  tabs: MapTabState[];
+  activeTabId: string | null;
+  lastSaved: string;
+  // 全局UI状态
+  uiState?: {
+    leftPanelCollapsed: boolean;
+    rightPanelCollapsed: boolean;
+    bottomPanelCollapsed: boolean;
+    rightPanelType: 'feature' | 'symbology' | 'label' | null;
+    leftPanelState: any;
+    rightPanelState: any;
+    bottomPanelState: any;
+  };
+}
+
+/**
+ * 保存多地图标签页会话状态
+ */
+export const saveMapTabsSession = (state: MapTabsSessionState): void => {
+  try {
+    const data = {
+      ...state,
+      lastSaved: new Date().toISOString(),
+    };
+    localStorage.setItem(STORAGE_KEYS.MAP_TABS_SESSION, JSON.stringify(data));
+    console.log('[持久化] 保存多地图标签页会话:', data.tabs.length, '个标签页');
+  } catch (error) {
+    console.error('[持久化] 保存多地图标签页会话失败:', error);
+  }
+};
+
+/**
+ * 加载多地图标签页会话状态
+ */
+export const loadMapTabsSession = (): MapTabsSessionState | null => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.MAP_TABS_SESSION);
+    if (!data) return null;
+    
+    const state = JSON.parse(data) as MapTabsSessionState;
+    console.log('[持久化] 加载多地图标签页会话:', state.tabs.length, '个标签页');
+    return state;
+  } catch (error) {
+    console.error('[持久化] 加载多地图标签页会话失败:', error);
+    return null;
+  }
+};
+
+/**
+ * 清除多地图标签页会话状态
+ */
+export const clearMapTabsSession = (): void => {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.MAP_TABS_SESSION);
+    console.log('[持久化] 清除多地图标签页会话');
+  } catch (error) {
+    console.error('[持久化] 清除多地图标签页会话失败:', error);
+  }
 };

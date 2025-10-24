@@ -874,11 +874,31 @@ pub async fn read_multi_layer_vector_info(path: &str) -> Result<MultiLayerVector
         None
     };
     
+    // 检测是否是GDB格式
+    let is_gdb = path_lower.ends_with(".gdb") || path_lower.contains(".gdb\\") || path_lower.contains(".gdb/");
+    
     // 遍历所有图层
     for i in 0..layer_count {
         if let Ok(mut layer) = dataset.layer(i) {
             let layer_name = layer.name();
             let feature_count = layer.feature_count() as usize;
+            
+            // 对于GDB，检测图层所属的要素集
+            let feature_dataset = if is_gdb {
+                // GDB中的图层名称格式可能是 "FeatureDatasetName.FeatureClassName"
+                if layer_name.contains('.') {
+                    let parts: Vec<&str> = layer_name.split('.').collect();
+                    if parts.len() > 1 {
+                        Some(parts[0].to_string())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
             
             log::info!("处理图层 {}: {} (要素数: {})", i, layer_name, feature_count);
             
@@ -970,6 +990,7 @@ pub async fn read_multi_layer_vector_info(path: &str) -> Result<MultiLayerVector
                 geometry_type,
                 fields,
                 extent,
+                feature_dataset,
             });
         }
     }

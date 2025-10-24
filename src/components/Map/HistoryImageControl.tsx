@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Slider } from 'antd';
-import { useLayerStore } from '../../stores/layerStore';
+import { useMapTabsStore } from '../../stores/mapTabsStore';
 import './HistoryImageControl.css';
 
 const GEOVIS_TOKEN = '488fb6d94c9f290d58a855e648fe70d7f02db5ef9e496a07165ecfe3d2ccc4da';
@@ -17,7 +17,11 @@ const HistoryImageControl: React.FC<HistoryImageControlProps> = ({
 }) => {
   const [selectedYear, setSelectedYear] = useState<number>(2021);
   const [isVisible, setIsVisible] = useState<boolean>(false);
-  const { layers, addLayer, removeLayer } = useLayerStore();
+  const mapTabsStore = useMapTabsStore();
+  const currentTab = mapTabsStore.getCurrentTab();
+  const layers = currentTab?.layers || [];
+  const addLayer = (layer: any) => mapTabsStore.addLayerToCurrentTab(layer);
+  const removeLayer = (layerId: string) => mapTabsStore.removeLayerFromCurrentTab(layerId);
 
   // 检测是否有历史影像图层，并设置当前年份
   useEffect(() => {

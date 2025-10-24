@@ -129,34 +129,23 @@ interface CRSStore {
   getProjectedCRS: () => CRSInfo[];
 }
 
-// 默认使用WGS84
+// 默认使用CGCS2000
 const defaultCRS: CRSInfo = {
-  code: 'EPSG:4326',
-  name: 'WGS 84 地理坐标系',
+  code: 'EPSG:4490',
+  name: 'CGCS2000 地理坐标系',
   type: 'geographic',
-  wkt: 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]'
+  wkt: 'GEOGCS["China Geodetic Coordinate System 2000",DATUM["China_2000",SPHEROID["CGCS2000",6378137,298.257222101,AUTHORITY["EPSG","1024"]],AUTHORITY["EPSG","1043"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AXIS["Latitude",NORTH],AXIS["Longitude",EAST],AUTHORITY["EPSG","4490"]]'
 };
 
 export const useCRSStore = create<CRSStore>((set, get) => ({
   currentCRS: defaultCRS,
 
   setCRS: (crs: CRSInfo) => {
-    set({ currentCRS: crs });
-    console.log(`[CRS] 切换坐标系: ${crs.code} - ${crs.name}`);
-    
-    // 触发事件通知地图更新
-    window.dispatchEvent(new CustomEvent('crsChanged', { detail: crs }));
-    
-    // 触发状态保存
-    if (typeof window !== 'undefined') {
-      setTimeout(() => {
-        try {
-          const { useLayerStore } = require('./layerStore');
-          useLayerStore.getState().saveAllState();
-        } catch (e) {
-          // 静默失败
-        }
-      }, 100);
+    // 坐标系固定为CGCS2000，不允许切换
+    console.warn('[CRS] 坐标系已固定为CGCS2000，忽略切换请求');
+    // 如果尝试设置为CGCS2000，静默接受
+    if (crs.code === 'EPSG:4490') {
+      set({ currentCRS: crs });
     }
   },
 

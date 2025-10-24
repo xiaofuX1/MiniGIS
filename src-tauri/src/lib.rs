@@ -21,23 +21,39 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
-        .plugin(
-            tauri_plugin_window_state::Builder::default()
-                .skip_initial_state("splashscreen") // 跳过启动窗口的状态恢复
-                .build()
-        )
         .setup(|app| {
-            // 确保主窗口隐藏，只显示启动窗口
+            log::info!("应用启动 - 配置窗口状态");
+            
+            // 立即强制隐藏主窗口，防止短暂显示
             if let Some(main_window) = app.get_webview_window("main") {
+                log::info!("强制隐藏主窗口");
+                // 多次调用确保隐藏生效
                 let _ = main_window.hide();
+                let _ = main_window.set_skip_taskbar(true);
+                let _ = main_window.set_visible_on_all_workspaces(false);
+                
+                // 再次确认隐藏
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_millis(10));
+                    let _ = main_window.hide();
+                });
             }
             
             // 确保启动窗口显示并置顶
             if let Some(splash_window) = app.get_webview_window("splashscreen") {
+                log::info!("显示启动窗口");
                 let _ = splash_window.show();
                 let _ = splash_window.set_focus();
                 let _ = splash_window.set_always_on_top(true);
+                let _ = splash_window.center();
             }
+            
+            // 在主窗口完全隐藏后，才初始化窗口状态插件
+            app.handle().plugin(
+                tauri_plugin_window_state::Builder::default()
+                    .skip_initial_state("splashscreen") // 跳过启动窗口的状态恢复
+                    .build()
+            ).expect("Failed to initialize window state plugin");
             
             Ok(())
         })
@@ -58,6 +74,7 @@ pub fn run() {
             commands::gdal::gdal_export_vector,
             commands::file::file_exists,
             commands::window::close_splashscreen,
+            commands::fs::read_directory_unrestricted,
         ])
         .run(tauri::generate_context!())
         .expect("error while running MiniGIS application");

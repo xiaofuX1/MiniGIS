@@ -2,6 +2,189 @@
 
 本文档记录MiniGIS项目的所有重要更改。
 
+## [0.5.0] - 2025-10-24
+
+### ✨ 新增功能
+
+#### 添加数据对话框重构
+- **ArcGIS Pro 风格界面** - 完整重构添加数据对话框，采用专业GIS软件交互模式
+  - **列表详细视图**: 表格显示文件名称、类型、几何类型、要素数量
+  - **左侧目录树**: 快速访问常用位置（桌面、文档、下载等）
+  - **实时搜索过滤**: 在顶部工具栏快速定位文件
+- **GDB导航体验** - 类似文件管理器的GDB浏览方式
+  - 双击进入GDB内部查看要素集和图层
+  - 双击要素集只显示该要素集的图层
+  - 退出GDB返回文件系统
+- **完整导航系统** - 专业的路径导航功能
+  - 后退/前进按钮：浏览历史记录
+  - 向上一级：快速返回父目录
+  - 面包屑导航：显示当前路径，可点击跳转
+  - 导航历史记录：支持完整的前进后退
+- **路径快速跳转** - 底部工具栏路径输入
+  - 粘贴或输入完整路径
+  - 按Enter键直接跳转
+  - 自动识别GDB和普通目录
+- **文件类型筛选** - 下拉菜单快速过滤
+  - 支持筛选：所有类型、文件夹、GDB、Shapefile、GeoPackage、GeoJSON、KML/KMZ
+  - 实时更新列表显示
+- **快捷方式支持** - Windows快捷方式识别和导航
+  - 显示.lnk文件和符号链接
+  - 图标标记：右下角链接图标
+  - 类型标签：显示"文件夹 (快捷方式)"
+  - 双击跳转到目标位置
+- **专业文件选择** - 符合Windows和ArcGIS标准的多选逻辑
+  - 单选模式：单击文件只选中当前项
+  - 多选模式：Ctrl+单击切换选中状态
+  - 范围选择：Shift+单击选中范围内所有文件
+- **会话内记忆** - 智能位置记忆功能
+  - 对话框关闭后再打开自动恢复上次位置
+  - 使用sessionStorage仅在当前会话有效
+  - 程序重启后恢复到默认位置
+
+**影响文件**:
+- `src/components/Dialogs/AddDataDialog.tsx` - 完全重构添加数据对话框
+- `src/components/Dialogs/AddDataDialog.css` - 新增专业样式
+- `src-tauri/src/commands/fs.rs` - 添加快捷方式识别支持
+
+#### GDB 数据库支持
+- **FileGeoDatabase 支持** - 新增对 ESRI FileGeoDatabase (GDB) 数据库的完整支持
+  - 直接打开 `.gdb` 文件夹格式数据库
+  - 自动识别数据库中的所有图层
+  - 支持要素集（Feature Dataset）的层级结构
+- **图层选择界面** - 专业的图层选择对话框
+  - 按要素集分组显示图层
+  - 独立要素类单独列出
+  - 显示图层几何类型和要素数量
+  - 支持多选图层批量加载
+- **数据加载优化** - 智能批量加载机制
+  - 异步加载避免UI阻塞
+  - 自动坐标系转换
+  - 加载进度提示
+
+**新增文件**:
+- `docs/GDB_SUPPORT.md` - GDB数据库支持完整文档
+
+**影响文件**:
+- `src-tauri/src/models.rs` - LayerInfo添加feature_dataset字段
+- `src-tauri/src/services/gdal_service.rs` - 实现GDB要素集检测逻辑
+- `src/components/Ribbon/RibbonMenu.tsx` - 添加GDB打开和图层选择界面
+
+#### 多地图标签页系统
+- **多地图管理** - 类似 ArcGIS Pro 的多地图标签页功能，支持同时管理多个独立地图
+  - 每个标签页拥有独立的地图视图、图层列表、选中状态
+  - 标签页间完全隔离，互不影响
+  - 至少保留一个标签页
+- **标签页操作** - 丰富的标签页管理功能
+  - 新建地图：通过"插入"→"新建地图"或标签栏右上角"+"按钮
+  - 重命名：右键菜单→"重命名"
+  - 关闭：点击"×"或右键菜单→"关闭"
+  - 拖拽排序：长按200ms拖动标签页调整顺序（@dnd-kit）
+- **独立图层管理** - 每个地图标签页拥有独立的图层系统
+  - 图层面板自动显示当前激活标签页的图层
+  - 图层操作（添加、删除、排序等）仅影响当前标签页
+  - 支持图层分组、符号系统、标注配置
+- **状态持久化** - 完整的会话保存和恢复机制
+  - 自动保存所有标签页状态（防抖1秒）
+  - 保存内容：地图名称、视图状态、图层配置、属性表状态、UI布局
+  - 启动时自动恢复上次会话
+  - 智能过滤不存在的文件
+  - 恢复时保持上次的缩放级别和位置，不自动缩放到图层
+
+**新增文件**:
+- `src/stores/mapTabsStore.ts` - 多地图标签页状态管理
+- `src/components/Map/MapTabsContainer.tsx` - 标签页容器组件
+- `src/components/Map/MapTabsContainer.css` - 标签页样式
+- `docs/MAP_TABS_FEATURE.md` - 完整功能文档
+
+**影响文件**:
+- `src/services/storageService.ts` - 新增多地图标签页持久化接口
+- `src/hooks/useRestoreSession.ts` - 实现多地图标签页恢复逻辑
+- `src/components/Map/MapView.tsx` - 支持多标签页模式，避免恢复时自动缩放
+- `src/components/Panels/LayerPanel.tsx` - 适配多地图模式
+- `src/components/Ribbon/RibbonMenu.tsx` - 添加"新建地图"功能，适配多地图模式
+- `src/App.tsx` - 集成标签页容器，实现自动保存
+
+#### 要素识别增强
+- **多图层要素识别** - 浏览模式下支持一次点击识别多个图层的要素
+- **重叠要素显示** - 支持识别和显示同一位置的所有重叠要素
+- **树形结构导航** - 新增GIS风格的树形结构选择器，按图层分组显示识别结果
+  - 显示图层名称和要素数量（如 "道路图层 (3)"）
+  - 显示要素ID和几何类型（如 "要素1 [Polygon]"）
+  - 支持可折叠/展开图层节点
+  - 点击要素节点自动切换显示属性
+- **要素闪烁定位** - 切换要素时地图自动高亮闪烁定位
+- **紧凑UI设计** - 优化面板布局，移除冗余标题，提升空间利用率
+
+**影响文件**:
+- `src/stores/selectionStore.ts` - 新增多要素存储结构
+- `src/components/Map/MapView.tsx` - 优化识别逻辑收集所有重叠要素
+- `src/components/Panels/FeatureInfoPanel.tsx` - 实现树形选择器
+- `src/components/Panels/FeatureInfoPanel.css` - 紧凑样式优化
+
+### 🐛 Bug 修复
+
+#### 会话恢复相关修复
+1. **会话被空标签页覆盖** - 修复了重新打开软件时无法恢复之前打开的图层和标签页的问题
+   - **根本原因**: 应用启动时创建的空标签页在会话恢复前被自动保存，覆盖了之前的会话记录
+   - **解决方案**: `useRestoreSession` Hook 现在返回恢复完成状态，自动保存功能只在会话恢复完成后启用
+   - **详细说明**: 参见 `docs/SESSION_RESTORE_FIX.md`
+
+2. **恢复后图层不显示** - 修复了会话恢复后图层和底图不显示，需要手动开关图层才能加载的问题
+   - **根本原因1**: 使用 `array.splice()` 直接修改数组不会触发 Zustand 订阅更新，导致 MapView 组件不重新渲染
+   - **根本原因2**: 图层加载循环中使用 `return` 语句退出整个 async 函数，导致只有第一个图层加载
+   - **解决方案**: 改用 `setState` 触发状态更新，将 `return` 改为 `continue`，规范化图层数据结构
+   - **详细说明**: 参见 `docs/LAYER_RENDER_FIX.md`
+
+**影响文件**: 
+- `src/hooks/useRestoreSession.ts` - 会话恢复逻辑
+- `src/App.tsx` - 自动保存时序控制
+- `src/stores/uiStore.ts` - 移除废弃字段
+- `src/components/Map/MapView.tsx` - 图层加载循环修复
+
+### 🔧 改进与优化
+
+#### 坐标系统简化
+- **固定CGCS2000坐标系** - 系统默认使用CGCS2000地理坐标系（EPSG:4490）
+- **移除坐标系设置** - 简化用户界面，移除坐标系选择功能
+- **自动坐标转换** - 所有数据自动转换到CGCS2000底图坐标系显示
+- **统一经纬度显示** - 状态栏固定显示经纬度格式，不再区分投影坐标
+
+**影响文件**:
+- `src/stores/crsStore.ts` - 默认坐标系改为CGCS2000，阻止坐标系切换
+- `src/stores/mapStore.ts` - 地图投影改为EPSG:4490
+- `src/components/Ribbon/RibbonMenu.tsx` - 移除"坐标系"按钮
+- `src/components/StatusBar/StatusBar.tsx` - 简化坐标显示逻辑，固定经纬度
+- `src/components/Map/MapView.tsx` - 简化地图投影设置
+- `src/components/Panels/WindowManager.tsx` - 移除CRSPanel引用
+- `src/stores/windowStore.ts` - 移除crs-settings窗口配置
+- `src/hooks/useRestoreSession.ts` - 移除坐标系会话恢复
+- `src/utils/olHelpers.ts` - 更新注释为CGCS2000术语
+- `src/App.tsx` - 移除useCRSProjection调用
+
+**删除的文件**:
+- `src/components/Panels/CRSPanel.tsx` - 坐标系设置面板
+- `src/components/Dialogs/CRSDialog.tsx` - 坐标系选择对话框
+- `src/hooks/useCRSProjection.ts` - 坐标系投影钩子
+
+### ⚠️ 破坏性变更
+
+#### 移除用户自定义坐标系功能
+- **用户影响**: 用户不能再通过UI切换地图坐标系
+- **原因**: 简化系统复杂度，统一使用国家标准CGCS2000坐标系
+- **迁移指南**: 
+  - 所有数据会自动转换到CGCS2000坐标系显示
+  - 保存的会话不再恢复坐标系设置
+  - 数据文件的原始坐标系会被自动识别并转换
+
+### 📊 统计信息
+
+- **新增功能**: 4 (添加数据对话框重构, GDB数据库支持, 多地图标签页系统, 要素识别增强)
+- **Bug 修复**: 2 (会话恢复相关)
+- **改进优化**: 1 (坐标系统简化)
+- **破坏性变更**: 1 (移除用户自定义坐标系)
+
+---
+
 ## [0.4.0] - 2025-10-20
 
 ### ✨ 新增功能 - 矢量数据导出
@@ -260,6 +443,7 @@
 - **Minor (0.x.0)**: 新功能添加，向后兼容
 - **Patch (0.0.x)**: Bug修复和小改进
 
+[0.5.0]: https://github.com/xiaofuX1/MiniGIS/releases/tag/v0.5.0
 [0.4.0]: https://github.com/xiaofuX1/MiniGIS/releases/tag/v0.4.0
 [0.3.0]: https://github.com/xiaofuX1/MiniGIS/releases/tag/v0.3.0
 [0.2.0]: https://github.com/xiaofuX1/MiniGIS/releases/tag/v0.2.0

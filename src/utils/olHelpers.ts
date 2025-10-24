@@ -3,24 +3,24 @@ import type { Extent } from 'ol/extent';
 
 /**
  * OpenLayers辅助工具函数
- * 使用EPSG:4326（地理坐标系）作为基础，像专业GIS软件一样无限制
+ * 使用CGCS2000地理坐标系（EPSG:4490）
  */
 
 /**
  * 将[lat, lng]转换为OpenLayers坐标
- * 使用EPSG:4326地理坐标系，无纬度限制
+ * CGCS2000地理坐标系，格式：[经度, 纬度]
  */
 export const latLngToOL = (latLng: [number, number]): Coordinate => {
-  // 直接返回[lng, lat]，使用EPSG:4326，无需投影转换
+  // 返回[lng, lat]（经度在前，纬度在后）
   return [latLng[1], latLng[0]];
 };
 
 /**
  * 将OpenLayers坐标转换为[lat, lng]
- * 使用EPSG:4326地理坐标系，直接转换，完全无限制
+ * CGCS2000地理坐标系
  */
 export const olToLatLng = (coordinate: Coordinate): [number, number] => {
-  // 直接返回[lat, lng]，完全无限制，支持任意数值
+  // 返回[lat, lng]（纬度在前，经度在后）
   return [coordinate[1], coordinate[0]];
 };
 
@@ -34,17 +34,16 @@ export const geoJsonExtentToOL = (extent: {
   maxX: number;
   maxY: number;
 }): Extent => {
-  // 使用EPSG:4326，直接返回原始值，完全无限制
-  // 格式：[minX, minY, maxX, maxY]
+  // CGCS2000地理坐标系，格式：[minX, minY, maxX, maxY]
   return [extent.minX, extent.minY, extent.maxX, extent.maxY];
 };
 
 /**
  * 将OpenLayers extent转换为GeoJSON extent
- * 使用EPSG:4326，直接转换，完全无限制
+ * CGCS2000地理坐标系
  */
 export const olExtentToGeoJson = (extent: Extent) => {
-  // 直接返回原始值，支持任意范围的坐标
+  // 返回原始值
   return {
     minX: extent[0],
     minY: extent[1],

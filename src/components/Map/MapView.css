@@ -19,7 +19,7 @@
 .map-toolbar {
   position: absolute;
   top: 16px;
-  /* left 通过 inline style 动态设置 */
+  left: 16px;
   z-index: 1000;
   display: flex;
   flex-direction: column;

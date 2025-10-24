@@ -5,7 +5,7 @@ import FeatureInfoPanel from './FeatureInfoPanel';
 import SymbologyPanel from './SymbologyPanel';
 import LabelPanel from './LabelPanel';
 import { useUiStore } from '../../stores/uiStore';
-import { useLayerStore } from '../../stores/layerStore';
+import { useMapTabsStore } from '../../stores/mapTabsStore';
 import './RightPanel.css';
 
 interface RightPanelProps {
@@ -14,11 +14,25 @@ interface RightPanelProps {
 
 const RightPanel: React.FC<RightPanelProps> = ({ onClose }) => {
   const { rightPanelType, symbologyLayerId, labelLayerId, setRightPanelType, closeSymbologyPanel, closeLabelPanel } = useUiStore();
-  const { layers } = useLayerStore();
+  const mapTabsStore = useMapTabsStore();
+  const currentTab = mapTabsStore.getCurrentTab();
+  const layers = currentTab?.layers || [];
+
+  // 递归查找图层（包括分组中的子图层）
+  const findLayerById = (layers: any[], id: string): any => {
+    for (const layer of layers) {
+      if (layer.id === id) return layer;
+      if (layer.children) {
+        const found = findLayerById(layer.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
 
   // 获取当前编辑的符号图层
-  const symbologyLayer = symbologyLayerId ? layers.find(l => l.id === symbologyLayerId) : null;
-  const labelLayer = labelLayerId ? layers.find(l => l.id === labelLayerId) : null;
+  const symbologyLayer = symbologyLayerId ? findLayerById(layers, symbologyLayerId) : null;
+  const labelLayer = labelLayerId ? findLayerById(layers, labelLayerId) : null;
 
   const handleCloseSymbology = () => {
     closeSymbologyPanel();

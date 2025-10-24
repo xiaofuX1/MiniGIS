@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schema.json",
   "productName": "MiniGIS",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "identifier": "com.xiaofu.minigis",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -10,6 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "label": "splashscreen",
@@ -24,6 +25,8 @@
         "alwaysOnTop": true,
         "skipTaskbar": true,
         "visible": true,
+        "visibleOnAllWorkspaces": false,
+        "focus": true,
         "backgroundColor": "#0ea5e9"
       },
       {
@@ -39,9 +42,11 @@
         "decorations": false,
         "transparent": false,
         "alwaysOnTop": false,
-        "skipTaskbar": false,
+        "skipTaskbar": true,
         "visible": false,
-        "backgroundColor": "#ffffff"
+        "focus": false,
+        "dragDropEnabled": false,
+        "backgroundColor": "#0ea5e9"
       }
     ],
     "security": {

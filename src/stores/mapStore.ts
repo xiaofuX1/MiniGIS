@@ -30,7 +30,7 @@ export const useMapStore = create<MapStore>((set) => ({
   center: savedMapState?.center || [39.9093, 116.3974], // 北京坐标
   zoom: savedMapState?.zoom || 10,
   basemapUrl: 'https://gac-geo.googlecnapps.club/maps/vt?lyrs=s&x={x}&y={y}&z={z}',
-  projection: 'EPSG:4326',
+  projection: 'EPSG:4490', // CGCS2000地理坐标系
   extent: null,
 
   setCenter: (center) => {

@@ -1,6 +1,6 @@
-# MiniGIS v0.2.0 自动发布脚本
+# MiniGIS v0.5.0 自动发布脚本
 
-Write-Host "=== MiniGIS v0.2.0 发布脚本 ===" -ForegroundColor Cyan
+Write-Host "=== MiniGIS v0.5.0 发布脚本 ===" -ForegroundColor Cyan
 Write-Host ""
 
 # 刷新环境变量
@@ -32,7 +32,7 @@ Write-Host "✓ GitHub认证成功" -ForegroundColor Green
 Write-Host ""
 
 # 检查MSI文件
-$msiPath = "target\release\bundle\msi\MiniGIS_0.2.0_x64_zh-CN.msi"
+$msiPath = "target\release\bundle\msi\MiniGIS_0.5.0_x64_zh-CN.msi"
 if (-not (Test-Path $msiPath)) {
     Write-Host "✗ 找不到MSI文件: $msiPath" -ForegroundColor Red
     exit 1
@@ -47,19 +47,20 @@ Write-Host ""
 
 # 创建Release Notes
 $releaseNotes = @"
-# MiniGIS v0.2.0 🎉
+# MiniGIS v0.5.0 🎉
 
 ## 重大更新
 
-v0.2.0 是 MiniGIS 的一个重要里程碑版本，带来了完整的 GDAL 支持和大量性能改进。
+v0.5.0 是一个重要的功能增强版本，带来了专业GIS软件级别的数据管理体验。
 
 ### ✨ 新增功能
 
-- ✅ **GDAL 完整集成** - 支持 Shapefile、GeoJSON、GeoPackage 等格式
-- ✅ **MapLibre GL 引擎** - 硬件加速渲染，性能提升 10 倍
-- ✅ **符号系统** - 完整的点/线/面符号自定义
-- ✅ **测量工具** - 距离、面积测量
-- ✅ **MSI 安装包** - 企业级 Windows 安装程序
+- ✅ **ArcGIS Pro 风格数据浏览器** - 重构添加数据对话框，提供专业的文件浏览和导航体验
+- ✅ **FileGeoDatabase 支持** - 完整支持 ESRI GDB 数据库格式
+- ✅ **多地图标签页系统** - 类似 ArcGIS Pro 的多地图管理能力
+- ✅ **要素识别增强** - 支持多图层重叠要素的识别和树形导航
+- ✅ **会话恢复修复** - 修复了影响用户体验的关键问题
+- ✅ **坐标系统简化** - 统一使用 CGCS2000 国家标准坐标系
 
 ### 📦 下载
 
@@ -78,14 +79,15 @@ $hash
 
 ### 📖 完整说明
 
-详见仓库中的 [RELEASE_NOTES_v0.2.0.md](./RELEASE_NOTES_v0.2.0.md)
+详见仓库中的 [RELEASE_NOTES_v0.5.0.md](./docs/releases/RELEASE_NOTES_v0.5.0.md)
 
 ### 🎯 快速开始
 
 1. 下载并安装MSI文件
 2. 启动MiniGIS
-3. 主页 → 添加数据 → 选择shp/geojson文件
-4. 开始使用！
+3. 主页 → 添加数据 → 浏览并选择 GIS 数据
+4. 尝试创建多个地图标签页
+5. 关闭软件后重新打开，体验会话恢复功能
 
 ---
 
@@ -96,14 +98,14 @@ $hash
 $releaseNotes | Out-File -FilePath "RELEASE_NOTES_TEMP.md" -Encoding UTF8
 
 Write-Host "准备创建GitHub Release..." -ForegroundColor Cyan
-Write-Host "版本: v0.2.0" -ForegroundColor White
-Write-Host "标题: MiniGIS v0.2.0 - GDAL完整支持" -ForegroundColor White
+Write-Host "版本: v0.5.0" -ForegroundColor White
+Write-Host "标题: MiniGIS v0.5.0 - 专业数据管理体验" -ForegroundColor White
 Write-Host ""
 
 # 创建Release
 Write-Host "正在创建Release..." -ForegroundColor Yellow
-& gh release create v0.2.0 `
-    --title "MiniGIS v0.2.0 - GDAL完整支持" `
+& gh release create v0.5.0 `
+    --title "MiniGIS v0.5.0 - 专业数据管理体验" `
     --notes-file "RELEASE_NOTES_TEMP.md" `
     --latest `
     $msiPath

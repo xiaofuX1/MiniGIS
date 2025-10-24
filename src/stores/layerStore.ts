@@ -51,6 +51,7 @@ export interface Layer {
   isGroup?: boolean; // 是否为分组图层
   children?: Layer[]; // 子图层(用于分组显示)
   expanded?: boolean; // 分组是否展开
+  deferredLoad?: boolean; // 延迟加载标记（用于会话恢复优化）
 }
 
 interface LayerStore {
@@ -290,11 +291,20 @@ export const useLayerStore = create<LayerStore>((set, get) => ({
 
   addAttributeTableLayer: (layerId: string) => {
     const { attributeTableLayerIds } = get();
+    console.log('[LayerStore] addAttributeTableLayer 调用:', {
+      layerId,
+      当前打开的图层: attributeTableLayerIds,
+      是否已存在: attributeTableLayerIds.includes(layerId)
+    });
+    
     if (!attributeTableLayerIds.includes(layerId)) {
+      const newLayerIds = [...attributeTableLayerIds, layerId];
       set({ 
-        attributeTableLayerIds: [...attributeTableLayerIds, layerId],
+        attributeTableLayerIds: newLayerIds,
         activeAttributeTableLayerId: layerId
       });
+      console.log('[LayerStore] 添加成功，新的图层列表:', newLayerIds);
+      
       // 自动选中该图层（递归查找包括子图层）
       const findLayer = (layers: Layer[]): Layer | undefined => {
         for (const layer of layers) {
@@ -309,9 +319,13 @@ export const useLayerStore = create<LayerStore>((set, get) => ({
       const layer = findLayer(get().layers);
       if (layer) {
         set({ selectedLayer: layer });
+        console.log('[LayerStore] 图层已选中:', layer.name);
+      } else {
+        console.warn('[LayerStore] 未找到图层:', layerId);
       }
     } else {
       // 如果已经打开，则切换到该标签页
+      console.log('[LayerStore] 图层已打开，切换标签页');
       set({ activeAttributeTableLayerId: layerId });
     }
   },

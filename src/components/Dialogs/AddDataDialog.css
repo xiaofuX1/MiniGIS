@@ -1,0 +1,223 @@
+.add-data-dialog .ant-modal-body {
+  padding: 0;
+  height: 550px;
+  overflow: hidden;
+}
+
+.add-data-container {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  background: #f5f5f5;
+}
+
+/* 左侧目录树 */
+.add-data-sidebar {
+  width: 240px;
+  background: white;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-title {
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
+.add-data-sidebar .ant-tree {
+  padding: 8px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.add-data-sidebar .ant-tree-node-content-wrapper {
+  padding: 2px 4px;
+}
+
+.add-data-sidebar .ant-tree-title {
+  font-size: 13px;
+}
+
+/* 右侧文件列表 */
+.add-data-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+.content-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fafafa;
+}
+
+.current-path {
+  flex: 1;
+  font-size: 13px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 4px 8px;
+  background: white;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+}
+
+.file-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  min-height: 0;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.file-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.file-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 8px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fafafa;
+}
+
+.file-item:hover {
+  background: #e6f7ff;
+  border-color: #91d5ff;
+}
+
+.file-item.selected {
+  background: #e6f7ff;
+  border-color: #1890ff;
+}
+
+.file-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+.file-info {
+  width: 100%;
+  text-align: center;
+}
+
+.file-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  word-break: break-word;
+  line-height: 1.3;
+  max-height: 2.6em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.file-type {
+  font-size: 11px;
+  color: #999;
+  margin-top: 4px;
+}
+
+.content-footer {
+  padding: 8px 12px;
+  border-top: 1px solid #e0e0e0;
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
+.supported-formats {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.supported-formats strong {
+  color: #333;
+  margin-right: 4px;
+}
+
+/* 表格列表样式 */
+.file-table {
+  font-size: 13px;
+}
+
+.file-table thead th {
+  position: sticky;
+  top: 0;
+  background: #fafafa;
+  z-index: 10;
+}
+
+.file-table tbody tr {
+  transition: background 0.2s;
+}
+
+.file-table tbody tr:hover {
+  background: #f5f5f5 !important;
+}
+
+.file-table tbody tr.selected {
+  background: #e6f7ff !important;
+}
+
+.file-table tbody tr.selected:hover {
+  background: #bae7ff !important;
+}
+
+/* 滚动条样式 */
+.add-data-sidebar .ant-tree::-webkit-scrollbar,
+.file-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.add-data-sidebar .ant-tree::-webkit-scrollbar-thumb,
+.file-list::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+.add-data-sidebar .ant-tree::-webkit-scrollbar-thumb:hover,
+.file-list::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .add-data-sidebar {
+    width: 180px;
+  }
+  
+  .file-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+}

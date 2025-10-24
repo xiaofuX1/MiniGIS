@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Slider, Select, Input, ColorPicker, Divider, Space, Button } from 'antd';
 import type { Color } from 'antd/es/color-picker';
-import { useLayerStore, Layer } from '../../stores/layerStore';
+import { Layer } from '../../stores/layerStore';
+import { useMapTabsStore } from '../../stores/mapTabsStore';
 import type { Symbolizer, PointSymbolizer, LineSymbolizer, PolygonSymbolizer } from '../../types';
 import './SymbologyPanel.css';
 
@@ -11,7 +12,11 @@ interface SymbologyPanelProps {
 }
 
 const SymbologyPanel: React.FC<SymbologyPanelProps> = ({ layer, onClose }) => {
-  const { updateLayer } = useLayerStore();
+  const mapTabsStore = useMapTabsStore();
+  
+  const updateLayer = (layerId: string, updates: Partial<Layer>) => {
+    mapTabsStore.updateLayerInCurrentTab(layerId, updates);
+  };
   
   // 检测几何类型
   const detectGeometryType = (layer: Layer): 'point' | 'line' | 'polygon' | null => {

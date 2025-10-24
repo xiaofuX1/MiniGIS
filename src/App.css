@@ -6,6 +6,16 @@
   overflow: hidden;
 }
 
+/* 应用启动背景过渡 */
+body {
+  transition: background 0.2s ease-in-out;
+}
+
+/* 主界面就绪后的样式 */
+body.app-loaded {
+  background: #f5f5f5;
+}
+
 /* Panel animations */
 .panel-enter {
   opacity: 0;

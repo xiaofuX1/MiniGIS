@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Form, Select, Button, App, Space, Typography, Divider } from 'antd';
 import { ExportOutlined, FileOutlined } from '@ant-design/icons';
-import { useLayerStore } from '../../stores/layerStore';
+import { useMapTabsStore } from '../../stores/mapTabsStore';
 import { invoke } from '@tauri-apps/api/core';
 import { save } from '@tauri-apps/plugin-dialog';
 import './SymbologyPanel.css';
@@ -14,7 +14,9 @@ interface ExportPanelProps {
 
 const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
   const { message } = App.useApp();
-  const { layers } = useLayerStore();
+  const mapTabsStore = useMapTabsStore();
+  const currentTab = mapTabsStore.getCurrentTab();
+  const layers = currentTab?.layers || [];
   const [form] = Form.useForm();
   const [exporting, setExporting] = useState(false);
 

@@ -1,0 +1,32 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "fs-all",
+  "description": "Full filesystem access",
+  "local": true,
+  "windows": ["main"],
+  "permissions": [
+    "fs:allow-read-dir",
+    "fs:allow-read-file",
+    "fs:allow-stat",
+    "fs:allow-lstat",
+    "fs:allow-exists"
+  ],
+  "platforms": ["windows"],
+  "scope": {
+    "allow": [
+      { "path": "$HOME/**" },
+      { "path": "$DESKTOP/**" },
+      { "path": "$DOCUMENT/**" },
+      { "path": "$DOWNLOAD/**" },
+      "C:\\**",
+      "D:\\**",
+      "E:\\**",
+      "F:\\**",
+      "G:\\**",
+      "H:\\**",
+      "I:\\**",
+      "J:\\**",
+      "K:\\**"
+    ]
+  }
+}
